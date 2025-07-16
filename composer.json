@@ -1,0 +1,17 @@
+{
+    "name": "acato/block-editor-templates",
+    "type": "wordpress-plugin",
+    "require": {
+        "composer/installers": "~1.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "composer/installers": true,
+            "phpstan/extension-installer": true
+        }
+    },
+    "require-dev": {
+        "szepeviktor/phpstan-wordpress": "^2.0",
+        "phpstan/extension-installer": "^1.4"
+    }
+}

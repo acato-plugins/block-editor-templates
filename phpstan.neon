@@ -1,0 +1,13 @@
+includes:
+    - vendor/szepeviktor/phpstan-wordpress/extension.neon
+parameters:
+	level: 7
+	paths:
+		- block-editor-templates.php
+		- functions
+		- src
+		- templates
+	ignoreErrors:
+		-
+			identifier: constant.notFound
+		- "#callback of function add_menu_page expects callable#"

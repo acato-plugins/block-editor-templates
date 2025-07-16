@@ -1,0 +1,28 @@
+{
+    "name": "block-editor-templates",
+    "version": "0.1.0",
+    "description": "Templates for the WordPress Block Editor.",
+    "author": "Acato",
+    "main": "build/index.js",
+    "scripts": {
+        "build": "wp-scripts build src/admin/assets/admin.js",
+        "format:js": "wp-scripts format-js",
+        "lint:js": "wp-scripts lint-js",
+        "start": "wp-scripts start src/admin/assets/admin.js",
+        "packages-update": "wp-scripts packages-update"
+    },
+    "devDependencies": {
+        "@wordpress/eslint-plugin": "^22.5.0",
+        "@wordpress/prettier-config": "^4.19.0",
+        "@wordpress/scripts": "^30.12.0"
+    },
+    "dependencies": {
+        "@wordpress/block-editor": "^14.14.0",
+        "@wordpress/components": "^29.5.0",
+        "@wordpress/compose": "^7.19.0",
+        "@wordpress/element": "^6.19.0",
+        "@wordpress/i18n": "^5.19.0",
+        "@wordpress/icons": "*"
+    },
+    "prettier": "@wordpress/prettier-config"
+}
