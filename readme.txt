@@ -4,7 +4,7 @@ Tags: block editor, gutenberg, block templates
 Requires at least: 5.0
 Tested up to: 6.8
 Requires PHP: 7.2
-Stable tag: 1.0.4
+Stable tag: 1.0.5
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl.html
 
@@ -58,6 +58,11 @@ You can read more about the distinction between these types of themes in [the Wo
 You can report security bugs through the Patchstack Vulnerability Disclosure Program. The Patchstack team helps validate, triage and handle any security vulnerabilities. [Report a security vulnerability.]( https://patchstack.com/database/vdp/398f3310-d285-4489-ae3b-07b8ab344119 )
 
 == Changelog ==
+
+= 1.0.5 =
+Release Date: July 30th, 2025
+
+Fix: Changes in the plugin for posting to WordPress.org include using get_posts instead of a direct DB query for checking the existence of templates. This however had the effect of sometimes not detecting existing templates, which caused the plugin to create new templates even if one already existed. This has been fixed by using the correct query parameters in get_posts.
 
 = 1.0.4 =
 Release Date: May 26th, 2025
