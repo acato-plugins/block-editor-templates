@@ -133,7 +133,7 @@ class Admin {
 			$template_posts = get_posts(
 				[
 					'numberposts' => -1,
-					'post_type'   => [ 'block-templates', 'pt-arch-templates', 'tax-arch-templates' ],
+					'post_type'   => array_keys( self::post_types() ),
 					'post_status' => 'any',
 					// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- This is cached.
 					'meta_key'    => '_template_for_posttype',
@@ -287,7 +287,7 @@ class Admin {
 				$posts_with_templates = get_posts(
 					[
 						'numberposts' => -1,
-						'post_type'   => [ 'block-templates', 'pt-arch-templates', 'tax-arch-templates' ],
+						'post_type'   => array_keys( self::post_types() ),
 						'post_status' => 'any',
 						// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- This is cached.
 						'meta_key'    => (string) $settings['meta_field'],
@@ -366,7 +366,7 @@ class Admin {
 				$posts_with_templates = get_posts(
 					[
 						'numberposts' => -1,
-						'post_type'   => [ 'block-templates', 'pt-arch-templates', 'tax-arch-templates' ],
+						'post_type'   => array_keys( self::post_types() ),
 						'post_status' => 'any',
 						// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- This is cached.
 						'meta_key'    => (string) $settings['meta_field'],
@@ -644,7 +644,7 @@ class Admin {
 		$post_type = get_post_type( $post );
 
 		// Check if we are on the correct post type.
-		if ( ! in_array( $post_type, [ 'block-templates', 'pt-arch-templates', 'tax-arch-templates' ], true ) ) {
+		if ( ! in_array( $post_type, array_keys( self::post_types() ), true ) ) {
 			return $post_states;
 		}
 
