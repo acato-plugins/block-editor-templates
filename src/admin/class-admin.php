@@ -133,7 +133,7 @@ class Admin {
 			$template_posts = get_posts(
 				[
 					'numberposts' => -1,
-					'post_type'   => 'any',
+					'post_type'   => [ 'block-templates', 'pt-arch-templates', 'tax-arch-templates' ],
 					'post_status' => 'any',
 					// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- This is cached.
 					'meta_key'    => '_template_for_posttype',
@@ -287,7 +287,7 @@ class Admin {
 				$posts_with_templates = get_posts(
 					[
 						'numberposts' => -1,
-						'post_type'   => 'any',
+						'post_type'   => [ 'block-templates', 'pt-arch-templates', 'tax-arch-templates' ],
 						'post_status' => 'any',
 						// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- This is cached.
 						'meta_key'    => (string) $settings['meta_field'],
@@ -366,7 +366,7 @@ class Admin {
 				$posts_with_templates = get_posts(
 					[
 						'numberposts' => -1,
-						'post_type'   => 'any',
+						'post_type'   => [ 'block-templates', 'pt-arch-templates', 'tax-arch-templates' ],
 						'post_status' => 'any',
 						// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- This is cached.
 						'meta_key'    => (string) $settings['meta_field'],
