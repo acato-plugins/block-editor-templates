@@ -555,11 +555,11 @@ class Admin {
 		global $abet_template_post;
 
 		if ( is_post_type_archive() ) {
-			global $post;
+			global $wp_query;
 
 			$post_type  = 'pt-arch-templates';
 			$meta_key   = '_template_for_posttype_archive';
-			$meta_value = get_post_type( $post );
+			$meta_value = $wp_query->get( 'post_type' );
 			$templates  = [
 				'abet-' . $meta_value . '-archive.php',
 				'abet-posttype-archive.php',
