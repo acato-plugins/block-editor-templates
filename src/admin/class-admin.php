@@ -113,9 +113,9 @@ class Admin {
 					'only_for_has_archive' => true,
 				],
 				'special-templates'  => [
-					'single'               => _x( 'Special Template', 'posttype single name global used', 'gutenberg-block-templates' ),
-					'plural'               => _x( 'Special Templates', 'posttype plural name global used', 'gutenberg-block-templates' ),
-					'description'          => _x( 'Special Templates', 'posttype description', 'gutenberg-block-templates' ),
+					'single'               => _x( 'Special Template', 'posttype single name global used', 'block-editor-templates' ),
+					'plural'               => _x( 'Special Templates', 'posttype plural name global used', 'block-editor-templates' ),
+					'description'          => _x( 'Special Templates', 'posttype description', 'block-editor-templates' ),
 					'meta_field'           => '_template_for_special',
 					'for'                  => 'special',
 					'general_template'     => false,
