@@ -65,7 +65,11 @@ class Admin {
 
 		if ( ! wp_is_block_theme() ) {
 			add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'create_taxonomy_posts' ], 100 );
+			add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'create_special_pages' ], 100 );
 			add_filter( 'archive_template', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'get_custom_archive' ] );
+
+			// Set default 404 post template.
+			add_filter( 'template_include', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'set_404_template' ], 99 );
 		}
 	}
 
@@ -108,9 +112,18 @@ class Admin {
 					'general_template'     => true,
 					'only_for_has_archive' => true,
 				],
+				'special-templates'  => [
+					'single'               => _x( 'Special Template', 'posttype single name global used', 'gutenberg-block-templates' ),
+					'plural'               => _x( 'Special Templates', 'posttype plural name global used', 'gutenberg-block-templates' ),
+					'description'          => _x( 'Special Templates', 'posttype description', 'gutenberg-block-templates' ),
+					'meta_field'           => '_template_for_special',
+					'for'                  => 'special',
+					'general_template'     => false,
+					'only_for_has_archive' => false,
+				],
 			];
 			if ( wp_is_block_theme() ) {
-				unset( $post_types['pt-arch-templates'], $post_types['tax-arch-templates'] );
+				unset( $post_types['pt-arch-templates'], $post_types['tax-arch-templates'], $post_types['special-templates'] );
 			}
 		}
 
@@ -426,6 +439,44 @@ class Admin {
 	}
 
 	/**
+	 * Create a special page for each registered special page.
+	 *
+	 * @return void
+	 */
+	public static function create_special_pages() {
+		global $wpdb;
+
+		$special_pages = [
+			'404' => __( '404 page', 'block-editor-templates' ),
+		];
+
+		// Get all created templates.
+		$created_templates = $wpdb->get_results(
+			$wpdb->prepare( "SELECT meta_value FROM $wpdb->postmeta WHERE meta_key = %s", '_template_for_special' ),
+			ARRAY_A
+		);
+		$created_templates = array_column( $created_templates, 'meta_value' );
+
+		foreach ( $special_pages as $special_page_slug => $special_page_name ) {
+			// Force the slug to be a string.
+			$special_page_slug = (string) $special_page_slug;
+
+			if ( ! in_array( $special_page_slug, $created_templates, true ) ) {
+				wp_insert_post(
+					[
+						'post_type'   => 'special-templates',
+						'post_title'  => $special_page_name,
+						'post_status' => 'draft',
+						'meta_input'  => [
+							'_template_for_special' => $special_page_slug,
+						],
+					]
+				);
+			}
+		}
+	}
+
+	/**
 	 * Remove trash option from row actions.
 	 *
 	 * See: https://wordpress.stackexchange.com/a/295184
@@ -675,5 +726,47 @@ class Admin {
 		}
 
 		return $post_states;
+	}
+
+	/**
+	 * Set the 404 template.
+	 *
+	 * @param string $template The template to use.
+	 *
+	 * @return string The template to use.
+	 */
+	public static function set_404_template( $template ) {
+		global $abet_template_post;
+
+		// Check if we are on a 404 page.
+		if ( ! is_404() ) {
+			return $template;
+		}
+
+		$abet_template_404 = get_posts(
+			[
+				'fields'         => 'ids',
+				'post_type'      => 'special-templates',
+				'posts_per_page' => 1,
+				'post_status'    => 'publish',
+				'post_name'      => '404',
+			]
+		);
+
+		if ( $abet_template_404 ) {
+			$post_id            = reset( $abet_template_404 );
+			$abet_template_post = get_post( $post_id );
+
+			$templates[] = 'abet-404.php';
+			$template    = locate_template( $templates );
+
+			if ( ! $template ) {
+				$template = ABET_ABSPATH . 'templates/abet-404.php';
+			}
+
+			return $template;
+		}
+
+		return get_404_template();
 	}
 }
