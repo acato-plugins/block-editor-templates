@@ -4,7 +4,7 @@ Tags: block editor, gutenberg, block templates
 Requires at least: 5.0
 Tested up to: 6.8
 Requires PHP: 7.2
-Stable tag: 1.0.5
+Stable tag: 1.0.6
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl.html
 
@@ -59,6 +59,11 @@ You can read more about the distinction between these types of themes in [the Wo
 You can report security bugs through the Patchstack Vulnerability Disclosure Program. The Patchstack team helps validate, triage and handle any security vulnerabilities. [Report a security vulnerability.]( https://patchstack.com/database/vdp/398f3310-d285-4489-ae3b-07b8ab344119 )
 
 == Changelog ==
+
+= 1.0.6 =
+Release Date: January 12th, 2026
+
+Feature: Added support for customizing the 404-page template, when not using a block theme.
 
 = 1.0.5 =
 Release Date: July 30th, 2025
