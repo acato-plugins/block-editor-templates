@@ -23,6 +23,7 @@ After installation and activation: Go to wp-admin > Block Templates, here you ha
 1. **Post Type Templates**: These are templates that are used whenever a post of the specified post type is being created. There are templates for each of the public post types registered on your site.
 1. **Post Type Archive Template**: These are templates that are used whenever an archive page of the specified post type is being requested. There are templates for each of the public post types registered on your site, plus a General Template that will be used when there is no active Post Type Archive Template for the currently requested post type archive.
 1. **Taxonomy Archive Templates**: These are templates that are used whenever an archive page of the specified Taxonomy is being requested. There are templates for each of the public Taxonomies registered on your site, plus a General Template that will be used when there is no active Taxonomy Archive Template for the currently requested Taxonomy archive.
+1. **Special Templates**: Here you can find templates for special situations, for example the 404 page.
 
 The last two are only available if you use a classic theme, they are not supported for block themes.
 
