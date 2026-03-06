@@ -62,7 +62,6 @@ class Admin {
 		add_action( 'admin_enqueue_scripts', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'enqueue_admin_assets' ] );
 		add_action( 'admin_menu', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'admin_menu' ] );
 		add_filter( 'display_post_states', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'add_display_post_states' ], 10, 2 );
-		add_action( 'template_redirect', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'protect_template_posts' ] );
 
 		if ( ! wp_is_block_theme() ) {
 			add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'create_taxonomy_posts' ], 100 );
@@ -94,7 +93,6 @@ class Admin {
 					'for'                  => 'post_type',
 					'general_template'     => false,
 					'only_for_has_archive' => false,
-					'public'               => false,
 				],
 				'pt-arch-templates'  => [
 					'single'               => _x( 'Post Type Archive Template', 'posttype single name global used', 'block-editor-templates' ),
@@ -104,7 +102,6 @@ class Admin {
 					'for'                  => 'post_type',
 					'general_template'     => true,
 					'only_for_has_archive' => true,
-					'public'               => false,
 				],
 				'tax-arch-templates' => [
 					'single'               => _x( 'Taxonomy Archive Template', 'posttype single name global used', 'block-editor-templates' ),
@@ -114,7 +111,6 @@ class Admin {
 					'for'                  => 'taxonomy',
 					'general_template'     => true,
 					'only_for_has_archive' => true,
-					'public'               => false,
 				],
 				'special-templates'  => [
 					'single'               => _x( 'Special Template', 'posttype single name global used', 'block-editor-templates' ),
@@ -124,7 +120,6 @@ class Admin {
 					'for'                  => 'special',
 					'general_template'     => false,
 					'only_for_has_archive' => false,
-					'public'               => false,
 				],
 			];
 			if ( wp_is_block_theme() ) {
@@ -559,7 +554,7 @@ class Admin {
 				'supports'            => [ 'title', 'editor' ],
 				'taxonomies'          => [],
 				'hierarchical'        => false,
-				'public'              => (bool) $settings['public'],
+				'public'              => false,
 				'show_ui'             => true,
 				'show_in_menu'        => false,
 				'menu_position'       => 100,
@@ -573,7 +568,7 @@ class Admin {
 				'can_export'          => false,
 				'has_archive'         => false,
 				'exclude_from_search' => true,
-				'publicly_queryable'  => true,
+				'publicly_queryable'  => false,
 				/**
 				 * Filters the capability_type of the post_type.
 				 *
@@ -743,31 +738,6 @@ class Admin {
 		}
 
 		return $post_states;
-	}
-
-	/**
-	 * Protect template posts from unauthorized front-end access.
-	 *
-	 * Only logged-in users with edit_posts capability can view template posts on the front-end.
-	 *
-	 * @return void
-	 */
-	public static function protect_template_posts() {
-		if ( ! is_singular() ) {
-			return;
-		}
-
-		$post_type = get_post_type();
-		if ( ! $post_type || ! array_key_exists( $post_type, self::post_types() ) ) {
-			return;
-		}
-
-		if ( ! is_user_logged_in() || ! current_user_can( 'edit_posts' ) ) {
-			global $wp_query;
-			$wp_query->set_404();
-			status_header( 404 );
-			nocache_headers();
-		}
 	}
 
 	/**
