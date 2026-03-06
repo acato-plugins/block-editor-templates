@@ -62,6 +62,8 @@ class Admin {
 		add_action( 'admin_enqueue_scripts', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'enqueue_admin_assets' ] );
 		add_action( 'admin_menu', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'admin_menu' ] );
 		add_filter( 'display_post_states', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'add_display_post_states' ], 10, 2 );
+		add_action( 'template_redirect', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'protect_template_posts' ] );
+		add_filter( 'single_template', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'load_preview_template' ] );
 
 		if ( ! wp_is_block_theme() ) {
 			add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'create_taxonomy_posts' ], 100 );
@@ -93,6 +95,7 @@ class Admin {
 					'for'                  => 'post_type',
 					'general_template'     => false,
 					'only_for_has_archive' => false,
+					'public'               => false,
 				],
 				'pt-arch-templates'  => [
 					'single'               => _x( 'Post Type Archive Template', 'posttype single name global used', 'block-editor-templates' ),
@@ -102,6 +105,7 @@ class Admin {
 					'for'                  => 'post_type',
 					'general_template'     => true,
 					'only_for_has_archive' => true,
+					'public'               => false,
 				],
 				'tax-arch-templates' => [
 					'single'               => _x( 'Taxonomy Archive Template', 'posttype single name global used', 'block-editor-templates' ),
@@ -111,6 +115,7 @@ class Admin {
 					'for'                  => 'taxonomy',
 					'general_template'     => true,
 					'only_for_has_archive' => true,
+					'public'               => false,
 				],
 				'special-templates'  => [
 					'single'               => _x( 'Special Template', 'posttype single name global used', 'block-editor-templates' ),
@@ -120,6 +125,7 @@ class Admin {
 					'for'                  => 'special',
 					'general_template'     => false,
 					'only_for_has_archive' => false,
+					'public'               => true,
 				],
 			];
 			if ( wp_is_block_theme() ) {
@@ -497,6 +503,18 @@ class Admin {
 			) {
 				unset( $actions['trash'] );
 			}
+
+			// Add preview link if the template has content.
+			if ( ! empty( $post->post_content ) ) {
+				$preview_link = get_preview_post_link( $post->ID );
+				if ( $preview_link ) {
+					$actions['preview'] = sprintf(
+						'<a href="%s" target="_blank" rel="noopener noreferrer">%s</a>',
+						esc_url( $preview_link ),
+						esc_html__( 'Preview', 'block-editor-templates' )
+					);
+				}
+			}
 		}
 
 		return $actions;
@@ -542,7 +560,7 @@ class Admin {
 				'supports'            => [ 'title', 'editor' ],
 				'taxonomies'          => [],
 				'hierarchical'        => false,
-				'public'              => false,
+				'public'              => (bool) $settings['public'],
 				'show_ui'             => true,
 				'show_in_menu'        => false,
 				'menu_position'       => 100,
@@ -556,7 +574,7 @@ class Admin {
 				'can_export'          => false,
 				'has_archive'         => false,
 				'exclude_from_search' => true,
-				'publicly_queryable'  => false,
+				'publicly_queryable'  => true,
 				/**
 				 * Filters the capability_type of the post_type.
 				 *
@@ -726,6 +744,57 @@ class Admin {
 		}
 
 		return $post_states;
+	}
+
+	/**
+	 * Protect template posts from unauthorized front-end access.
+	 *
+	 * Only logged-in users with edit_posts capability can view template posts on the front-end.
+	 *
+	 * @return void
+	 */
+	public static function protect_template_posts() {
+		if ( ! is_singular() ) {
+			return;
+		}
+
+		$post_type = get_post_type();
+		if ( ! $post_type || ! array_key_exists( $post_type, self::post_types() ) ) {
+			return;
+		}
+
+		if ( ! is_user_logged_in() || ! current_user_can( 'edit_posts' ) ) {
+			global $wp_query;
+			$wp_query->set_404();
+			status_header( 404 );
+			nocache_headers();
+		}
+	}
+
+	/**
+	 * Load the preview template for template post types.
+	 *
+	 * @param string $template The current single template.
+	 *
+	 * @return string The template to use.
+	 */
+	public static function load_preview_template( $template ) {
+		$post_type = get_post_type();
+		if ( ! $post_type || ! array_key_exists( $post_type, self::post_types() ) ) {
+			return $template;
+		}
+
+		$preview_template = locate_template( 'abet-preview.php' );
+
+		if ( ! $preview_template ) {
+			$preview_template = ABET_ABSPATH . 'templates/abet-preview.php';
+		}
+
+		if ( file_exists( $preview_template ) ) {
+			return $preview_template;
+		}
+
+		return $template;
 	}
 
 	/**
