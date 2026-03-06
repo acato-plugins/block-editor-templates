@@ -63,7 +63,6 @@ class Admin {
 		add_action( 'admin_menu', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'admin_menu' ] );
 		add_filter( 'display_post_states', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'add_display_post_states' ], 10, 2 );
 		add_action( 'template_redirect', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'protect_template_posts' ] );
-		add_filter( 'single_template', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'load_preview_template' ] );
 
 		if ( ! wp_is_block_theme() ) {
 			add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'create_taxonomy_posts' ], 100 );
@@ -125,7 +124,7 @@ class Admin {
 					'for'                  => 'special',
 					'general_template'     => false,
 					'only_for_has_archive' => false,
-					'public'               => true,
+					'public'               => false,
 				],
 			];
 			if ( wp_is_block_theme() ) {
@@ -504,16 +503,16 @@ class Admin {
 				unset( $actions['trash'] );
 			}
 
-			// Add preview link if the template has content.
-			if ( ! empty( $post->post_content ) ) {
-				$preview_link = get_preview_post_link( $post->ID );
-				if ( $preview_link ) {
-					$actions['preview'] = sprintf(
-						'<a href="%s" target="_blank" rel="noopener noreferrer">%s</a>',
-						esc_url( $preview_link ),
-						esc_html__( 'Preview', 'block-editor-templates' )
-					);
-				}
+			// Replace the view link with a link to the actual frontend page, or remove it.
+			$preview_link = ! empty( $post->post_content ) ? self::get_template_preview_link( $post ) : false;
+			if ( $preview_link ) {
+				$actions['view'] = sprintf(
+					'<a href="%s" target="_blank" rel="noopener noreferrer">%s</a>',
+					esc_url( $preview_link ),
+					esc_html__( 'View', 'block-editor-templates' )
+				);
+			} else {
+				unset( $actions['view'] );
 			}
 		}
 
@@ -772,29 +771,48 @@ class Admin {
 	}
 
 	/**
-	 * Load the preview template for template post types.
+	 * Get the frontend preview link for a template post.
 	 *
-	 * @param string $template The current single template.
+	 * @param WP_Post $post The template post.
 	 *
-	 * @return string The template to use.
+	 * @return string|false The preview URL, or false if not available.
 	 */
-	public static function load_preview_template( $template ) {
-		$post_type = get_post_type();
-		if ( ! $post_type || ! array_key_exists( $post_type, self::post_types() ) ) {
-			return $template;
+	private static function get_template_preview_link( $post ) {
+		switch ( $post->post_type ) {
+			case 'pt-arch-templates':
+				$meta_value = get_post_meta( $post->ID, '_template_for_posttype_archive', true );
+				if ( 'general_template' === $meta_value || empty( $meta_value ) ) {
+					return false;
+				}
+				return get_post_type_archive_link( $meta_value );
+
+			case 'tax-arch-templates':
+				$meta_value = get_post_meta( $post->ID, '_template_for_taxonomy_archive', true );
+				if ( 'general_template' === $meta_value || empty( $meta_value ) ) {
+					return false;
+				}
+				$terms = get_terms(
+					[
+						'taxonomy'   => $meta_value,
+						'number'     => 1,
+						'hide_empty' => false,
+					]
+				);
+				if ( ! empty( $terms ) && ! is_wp_error( $terms ) ) {
+					return get_term_link( $terms[0] );
+				}
+				return false;
+
+			case 'special-templates':
+				$meta_value = get_post_meta( $post->ID, '_template_for_special', true );
+				if ( '404' === $meta_value ) {
+					return home_url( '/abet-404-preview' );
+				}
+				return false;
+
+			default:
+				return false;
 		}
-
-		$preview_template = locate_template( 'abet-preview.php' );
-
-		if ( ! $preview_template ) {
-			$preview_template = ABET_ABSPATH . 'templates/abet-preview.php';
-		}
-
-		if ( file_exists( $preview_template ) ) {
-			return $preview_template;
-		}
-
-		return $template;
 	}
 
 	/**
