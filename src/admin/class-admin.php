@@ -497,6 +497,18 @@ class Admin {
 			) {
 				unset( $actions['trash'] );
 			}
+
+			// Replace the view link with a link to the actual frontend page, or remove it.
+			$preview_link = 'publish' === $post->post_status && ! empty( $post->post_content ) ? self::get_template_preview_link( $post ) : false;
+			if ( $preview_link ) {
+				$actions['view'] = sprintf(
+					'<a href="%s" target="_blank" rel="noopener noreferrer">%s</a>',
+					esc_url( $preview_link ),
+					esc_html__( 'View', 'block-editor-templates' )
+				);
+			} else {
+				unset( $actions['view'] );
+			}
 		}
 
 		return $actions;
@@ -726,6 +738,51 @@ class Admin {
 		}
 
 		return $post_states;
+	}
+
+	/**
+	 * Get the frontend preview link for a template post.
+	 *
+	 * @param WP_Post $post The template post.
+	 *
+	 * @return string|false The preview URL, or false if not available.
+	 */
+	private static function get_template_preview_link( $post ) {
+		switch ( $post->post_type ) {
+			case 'pt-arch-templates':
+				$meta_value = get_post_meta( $post->ID, '_template_for_posttype_archive', true );
+				if ( 'general_template' === $meta_value || empty( $meta_value ) ) {
+					return false;
+				}
+				return get_post_type_archive_link( $meta_value );
+
+			case 'tax-arch-templates':
+				$meta_value = get_post_meta( $post->ID, '_template_for_taxonomy_archive', true );
+				if ( 'general_template' === $meta_value || empty( $meta_value ) ) {
+					return false;
+				}
+				$terms = get_terms(
+					[
+						'taxonomy'   => $meta_value,
+						'number'     => 1,
+						'hide_empty' => false,
+					]
+				);
+				if ( ! empty( $terms ) && ! is_wp_error( $terms ) ) {
+					return get_term_link( $terms[0] );
+				}
+				return false;
+
+			case 'special-templates':
+				$meta_value = get_post_meta( $post->ID, '_template_for_special', true );
+				if ( '404' === $meta_value ) {
+					return home_url( '/abet-404-preview' );
+				}
+				return false;
+
+			default:
+				return false;
+		}
 	}
 
 	/**
