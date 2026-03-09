@@ -499,7 +499,7 @@ class Admin {
 			}
 
 			// Replace the view link with a link to the actual frontend page, or remove it.
-			$preview_link = ! empty( $post->post_content ) ? self::get_template_preview_link( $post ) : false;
+			$preview_link = 'publish' === $post->post_status && ! empty( $post->post_content ) ? self::get_template_preview_link( $post ) : false;
 			if ( $preview_link ) {
 				$actions['view'] = sprintf(
 					'<a href="%s" target="_blank" rel="noopener noreferrer">%s</a>',
