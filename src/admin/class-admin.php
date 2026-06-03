@@ -190,6 +190,12 @@ class Admin {
 				continue;
 			}
 
+			// parse_blocks() only returns attributes stored in the block delimiter's JSON.
+			// Attributes declared with a "source" (e.g. the "html"-sourced text of a heading
+			// or paragraph) live in the markup itself, and the template format rebuilds each
+			// block from its attributes alone, so without this their content would be lost.
+			$block['attrs'] = self::add_sourced_attributes( $block );
+
 			if ( isset( $block['attrs']['textAsPlaceholder'], self::$registered_blocks[ $block['blockName'] ] ) && $block['attrs']['textAsPlaceholder'] ) {
 				$attributes = self::$registered_blocks[ $block['blockName'] ]->get_attributes();
 				foreach ( $attributes as $attribute_name => $attribute ) {
@@ -211,6 +217,92 @@ class Admin {
 		}
 
 		return $template;
+	}
+
+	/**
+	 * Read attributes that are sourced from the block markup back into the attributes array.
+	 *
+	 * Block attributes declared with a "source" (e.g. "html", "rich-text", "text" or
+	 * "attribute") are not stored in the block delimiter's JSON but in the markup, so
+	 * parse_blocks() leaves them out of $block['attrs']. Since the post type template
+	 * rebuilds each block from its attributes only, this restores those values from the
+	 * block's innerHTML so content such as a heading or paragraph text is preserved.
+	 *
+	 * Only the simple CSS selectors used by block.json definitions are supported
+	 * (comma separated tag, ".class" and "#id" selectors); anything else is skipped.
+	 *
+	 * @param array<mixed> $block A single block as provided by parse_blocks().
+	 *
+	 * @return array<mixed> The block attributes, including any markup-sourced values.
+	 */
+	private static function add_sourced_attributes( $block ) {
+		$attrs = $block['attrs'] ?? [];
+
+		if ( empty( $block['innerHTML'] ) || ! isset( self::$registered_blocks[ $block['blockName'] ] ) ) {
+			return $attrs;
+		}
+
+		$dom = new \DOMDocument();
+		libxml_use_internal_errors( true );
+		$dom->loadHTML(
+			'<?xml encoding="utf-8" ?><div id="abet-root">' . $block['innerHTML'] . '</div>',
+			LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+		);
+		libxml_clear_errors();
+		$xpath = new \DOMXPath( $dom );
+
+		foreach ( self::$registered_blocks[ $block['blockName'] ]->get_attributes() as $name => $definition ) {
+			if ( isset( $attrs[ $name ] ) || empty( $definition['source'] ) ) {
+				continue;
+			}
+
+			// Build an XPath query from the (simple) CSS selector. Without a selector the block root is used.
+			$query = '//*[@id="abet-root"]';
+			if ( ! empty( $definition['selector'] ) ) {
+				$branches = [];
+				foreach ( explode( ',', $definition['selector'] ) as $piece ) {
+					$piece = trim( $piece );
+					if ( '' === $piece ) {
+						continue;
+					}
+					if ( 0 === strpos( $piece, '.' ) ) {
+						$branches[] = '//*[contains(concat(" ", normalize-space(@class), " "), " ' . substr( $piece, 1 ) . ' ")]';
+					} elseif ( 0 === strpos( $piece, '#' ) ) {
+						$branches[] = '//*[@id="' . substr( $piece, 1 ) . '"]';
+					} else {
+						$branches[] = '//' . $piece;
+					}
+				}
+				$query = implode( ' | ', $branches );
+			}
+
+			$nodes = $xpath->query( $query );
+			if ( false === $nodes || ! $nodes->length ) {
+				continue;
+			}
+			$node = $nodes->item( 0 );
+
+			switch ( $definition['source'] ) {
+				case 'attribute':
+					if ( ! empty( $definition['attribute'] ) && $node instanceof \DOMElement && $node->hasAttribute( $definition['attribute'] ) ) {
+						$attrs[ $name ] = $node->getAttribute( $definition['attribute'] );
+					}
+					break;
+				case 'text':
+					$attrs[ $name ] = $node->textContent;
+					break;
+				case 'html':
+				case 'rich-text':
+					$html = '';
+					foreach ( $node->childNodes as $child ) {
+						$html .= $dom->saveHTML( $child );
+					}
+					$attrs[ $name ] = $html;
+					break;
+			}
+		}
+
+		return $attrs;
 	}
 
 	/**
