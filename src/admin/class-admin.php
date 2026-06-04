@@ -242,6 +242,15 @@ class Admin {
 				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 				error_log( 'block-editor-templates-admin (admin.js) isn`t found. Forgot to run `npm run build`?' );
 			}
+
+			if ( file_exists( ABET_ABSPATH . ABET_ASSETS_DIR . 'admin.css' ) ) {
+				wp_enqueue_style(
+					'block-editor-templates-admin',
+					esc_url( ABET_ASSETS_URL ) . 'admin.css',
+					[],
+					$script_asset['version']
+				);
+			}
 		}
 	}
 
