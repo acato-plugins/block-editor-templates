@@ -331,7 +331,7 @@ class Admin {
 			wp_cache_set( $cache_key, $template_posts, '', HOUR_IN_SECONDS );
 		}
 
-		return $template_posts;
+		return $template_posts ?: [];
 	}
 
 	/**
@@ -456,6 +456,8 @@ class Admin {
 	 * @return bool True when the post type uses the block editor.
 	 */
 	private static function uses_block_editor( $post_type ) {
+		// @todo: Check if `$post_type` is an post_type since there are also taxonomy templates.
+
 		if ( function_exists( 'use_block_editor_for_post_type' ) ) {
 			return use_block_editor_for_post_type( $post_type );
 		}
@@ -600,7 +602,13 @@ class Admin {
 	 */
 	private static function stale_template_trash_link( $post_id, $title ) {
 		$url = wp_nonce_url(
-			admin_url( 'admin-post.php?action=abet_trash_stale_template&post=' . $post_id ),
+			add_query_arg(
+				[
+					'action' => 'abet_trash_stale_template',
+					'post'   => $post_id,
+				],
+				admin_url( 'admin-post.php' )
+			),
 			'abet_trash_stale_template_' . $post_id
 		);
 
