@@ -364,7 +364,10 @@ class Admin {
 	 * @return bool True when the post type uses the block editor.
 	 */
 	private static function uses_block_editor( $post_type ) {
-		// @todo: Check if `$post_type` is an post_type since there are also taxonomy templates.
+		// Taxonomy archive templates store a taxonomy slug, not a post type, so guard against those.
+		if ( ! post_type_exists( $post_type ) ) {
+			return false;
+		}
 
 		if ( function_exists( 'use_block_editor_for_post_type' ) ) {
 			return use_block_editor_for_post_type( $post_type );
