@@ -267,7 +267,7 @@ class Admin {
 			wp_cache_set( $cache_key, $template_posts, '', HOUR_IN_SECONDS );
 		}
 
-		return $template_posts ?: [];
+		return $template_posts ? $template_posts : [];
 	}
 
 	/**
@@ -294,7 +294,7 @@ class Admin {
 		}
 
 		foreach ( self::get_post_type_template_posts() as $post_id ) {
-			if ( ! self::use_default_content( $post_id ) || $post->post_type !== get_post_meta( $post_id, '_template_for_posttype', true ) ) {
+			if ( ! self::use_default_content( $post_id ) || get_post_meta( $post_id, '_template_for_posttype', true ) !== $post->post_type ) {
 				continue;
 			}
 
@@ -384,8 +384,8 @@ class Admin {
 	/**
 	 * Whether a post type is edited with the block editor.
 	 *
-	 * show_in_rest does not by itself imply block-editor support, so a post type can be exposed to
-	 * the REST API yet have no editor. Use WordPress' own check when it is available and fall back
+	 * The show_in_rest flag does not by itself imply block-editor support, so a post type can be exposed
+	 * to the REST API yet have no editor. Use WordPress' own check when it is available and fall back
 	 * to the block editor's minimum requirements (REST support and an editor) otherwise.
 	 *
 	 * @param string $post_type The post type slug.
@@ -498,7 +498,6 @@ class Admin {
 			$post_id = key( $stale );
 			$title   = current( $stale );
 
-			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Both parts are escaped (sentence via esc_html, link in the helper).
 			printf(
 				'<p>%1$s %2$s</p>',
 				esc_html(
@@ -508,6 +507,7 @@ class Admin {
 						self::stale_template_label( $post_id, $title )
 					)
 				),
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Helper returns escaped anchor markup (esc_url/esc_html).
 				self::stale_template_trash_link( $post_id, $title )
 			);
 		}
