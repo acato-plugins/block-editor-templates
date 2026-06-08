@@ -67,6 +67,8 @@ class Admin {
 		add_action( 'admin_enqueue_scripts', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'enqueue_admin_assets' ] );
 		add_action( 'admin_menu', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'admin_menu' ] );
 		add_filter( 'display_post_states', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'add_display_post_states' ], 10, 2 );
+		add_filter( 'manage_block-templates_posts_columns', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'add_default_content_column' ] );
+		add_action( 'manage_block-templates_posts_custom_column', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'render_default_content_column' ], 10, 2 );
 
 		if ( ! wp_is_block_theme() ) {
 			add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'create_taxonomy_posts' ], 100 );
@@ -1118,6 +1120,55 @@ class Admin {
 		}
 
 		return $post_states;
+	}
+
+	/**
+	 * Add a "Prefill new posts" column to the block-templates list table.
+	 *
+	 * @param array<string, string> $columns The existing list-table columns.
+	 *
+	 * @return array<string, string> The columns with the prefill column added before the date.
+	 */
+	public static function add_default_content_column( $columns ) {
+		$date = $columns['date'] ?? null;
+		unset( $columns['date'] );
+
+		$help = __( 'Copy this template into new posts (keeping heading and paragraph text). Only applies when creating a post in the WordPress admin.', 'block-editor-templates' );
+
+		// The icon is a decorative mouse-hover hint (title); the help text is exposed to assistive
+		// technology as real text via screen-reader-text so it does not depend on the tooltip.
+		$columns['abet_default_content'] = sprintf(
+			'%1$s <span class="dashicons dashicons-editor-help" style="font-size:16px;width:16px;height:16px;vertical-align:text-bottom;cursor:help;" aria-hidden="true" title="%2$s"></span><span class="screen-reader-text">%3$s</span>',
+			esc_html__( 'Prefill new posts', 'block-editor-templates' ),
+			esc_attr( $help ),
+			esc_html( $help )
+		);
+
+		if ( null !== $date ) {
+			$columns['date'] = $date;
+		}
+
+		return $columns;
+	}
+
+	/**
+	 * Render the "Prefill new posts" column for a block-templates row.
+	 *
+	 * @param string $column  The current column key.
+	 * @param int    $post_id The current post ID.
+	 *
+	 * @return void
+	 */
+	public static function render_default_content_column( $column, $post_id ) {
+		if ( 'abet_default_content' !== $column ) {
+			return;
+		}
+
+		if ( self::use_default_content( $post_id ) ) {
+			printf( '<span class="dashicons dashicons-yes" aria-hidden="true"></span><span class="screen-reader-text">%s</span>', esc_html__( 'Prefill enabled', 'block-editor-templates' ) );
+		} else {
+			printf( '<span aria-hidden="true">&#8212;</span><span class="screen-reader-text">%s</span>', esc_html__( 'Prefill disabled', 'block-editor-templates' ) );
+		}
 	}
 
 	/**
