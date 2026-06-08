@@ -56,6 +56,7 @@ class Admin {
 	 */
 	public function __construct() {
 		add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'register_post_types' ] );
+		add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'register_template_meta' ] );
 		add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'create_post_type_posts' ], 100 );
 		add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'register_block_templates' ], 999 );
 		add_filter( 'default_content', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'set_default_content' ], 10, 2 );
@@ -142,15 +143,14 @@ class Admin {
 	public static function register_block_templates() {
 		self::$registered_blocks = \WP_Block_Type_Registry::get_instance()->get_all_registered();
 
-		// Prototype toggle: the default_content approach (see self::set_default_content())
-		// prefills new posts with the template's markup verbatim, so the post-type template —
-		// which rebuilds each block via createBlock and therefore drops markup-sourced content —
-		// is no longer needed. Filter 'abet_use_default_content' to false to keep using $object->template.
-		if ( self::use_default_content() ) {
-			return;
-		}
-
 		foreach ( self::get_post_type_template_posts() as $post_id ) {
+			// Templates that prefill new posts through default_content (see self::set_default_content())
+			// must not also register $object->template, which rebuilds each block via createBlock and
+			// therefore drops markup-sourced content such as a heading's or paragraph's text.
+			if ( self::use_default_content( $post_id ) ) {
+				continue;
+			}
+
 			$post_type = get_post_meta( $post_id, '_template_for_posttype', true );
 			$object    = get_post_type_object( $post_type );
 
@@ -208,12 +208,38 @@ class Admin {
 	}
 
 	/**
-	 * Whether new posts should be prefilled with the template content instead of a post-type template.
+	 * Register the per-template "prefill new posts" setting so it can be edited from the block editor.
+	 *
+	 * @return void
+	 */
+	public static function register_template_meta() {
+		register_post_meta(
+			'block-templates',
+			'_abet_use_default_content',
+			[
+				'type'          => 'boolean',
+				'default'       => false,
+				'single'        => true,
+				'show_in_rest'  => true,
+				'auth_callback' => static function ( $allowed, $meta_key, $post_id ) {
+					return current_user_can( 'edit_post', $post_id );
+				},
+			]
+		);
+	}
+
+	/**
+	 * Whether a given template should prefill new posts with its content instead of registering a post-type template.
+	 *
+	 * Driven by the per-template '_abet_use_default_content' setting (off by default), read directly so the
+	 * editor's value is authoritative.
+	 *
+	 * @param int $post_id The template post ID.
 	 *
 	 * @return bool True to use the default_content approach, false to register $object->template.
 	 */
-	private static function use_default_content() {
-		return (bool) apply_filters( 'abet_use_default_content', true );
+	private static function use_default_content( $post_id ) {
+		return (bool) get_post_meta( $post_id, '_abet_use_default_content', true );
 	}
 
 	/**
@@ -256,8 +282,8 @@ class Admin {
 	 * @return string The (possibly prefilled) default content.
 	 */
 	public static function set_default_content( $content, $post ) {
-		// Only act on an empty new post when the feature is on.
-		if ( ! self::use_default_content() || ! empty( $content ) || ! $post instanceof WP_Post || empty( $post->post_type ) ) {
+		// Only act on an empty new post.
+		if ( ! empty( $content ) || ! $post instanceof WP_Post || empty( $post->post_type ) ) {
 			return $content;
 		}
 
@@ -266,12 +292,13 @@ class Admin {
 		}
 
 		foreach ( self::get_post_type_template_posts() as $post_id ) {
-			if ( $post->post_type !== get_post_meta( $post_id, '_template_for_posttype', true ) ) {
+			if ( ! self::use_default_content( $post_id ) || $post->post_type !== get_post_meta( $post_id, '_template_for_posttype', true ) ) {
 				continue;
 			}
 
 			$template_post = get_post( $post_id );
-			if ( ! $template_post || ! has_blocks( $template_post->post_content ) ) {
+			// A draft template is not applied: the plugin only uses published templates.
+			if ( ! $template_post || 'publish' !== $template_post->post_status || ! has_blocks( $template_post->post_content ) ) {
 				break;
 			}
 
@@ -539,7 +566,7 @@ class Admin {
 	public static function trash_stale_template() {
 		$post_id = isset( $_GET['post'] ) ? absint( wp_unslash( $_GET['post'] ) ) : 0;
 
-		if ( ! $post_id || ! current_user_can( 'delete_post', $post_id ) ) {
+		if ( ! $post_id || 'block-templates' !== get_post_type( $post_id ) || ! current_user_can( 'delete_post', $post_id ) ) {
 			wp_die( esc_html__( 'You are not allowed to trash this template.', 'block-editor-templates' ) );
 		}
 
@@ -902,7 +929,9 @@ class Admin {
 				'label'               => $post_type_single,
 				'description'         => (string) $settings['description'],
 				'labels'              => $labels,
-				'supports'            => [ 'title', 'editor' ],
+				// 'custom-fields' lets the REST API save registered post meta, such as the per-template
+				// '_abet_use_default_content' setting on block-templates (see self::register_template_meta()).
+				'supports'            => [ 'title', 'editor', 'custom-fields' ],
 				'taxonomies'          => [],
 				'hierarchical'        => false,
 				'public'              => false,
