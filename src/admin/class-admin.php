@@ -60,6 +60,7 @@ class Admin {
 		add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'create_post_type_posts' ], 100 );
 		add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'register_block_templates' ], 999 );
 		add_filter( 'default_content', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'set_default_content' ], 10, 2 );
+		add_filter( 'wp_insert_post_data', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'prefill_on_insert' ], 10, 4 );
 		add_action( 'admin_notices', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'stale_template_notice' ] );
 		add_action( 'admin_post_abet_trash_stale_template', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'trash_stale_template' ] );
 		add_action( 'admin_post_abet_trash_all_stale_templates', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'trash_all_stale_templates' ] );
@@ -289,30 +290,144 @@ class Admin {
 			return $content;
 		}
 
+		$prefilled = self::get_prefill_content_for_post_type( $post->post_type );
+
+		// Fall back to the original content rather than blanking the post if no prefill is available.
+		return '' !== $prefilled ? $prefilled : $content;
+	}
+
+	/**
+	 * Prefill new posts inserted outside the admin "Add New" flow (REST, wp_insert_post(), WP-CLI).
+	 *
+	 * The 'default_content' filter only fires for get_default_post_to_edit(), so posts created via
+	 * the REST API, wp_insert_post(), or WP-CLI would otherwise miss the prefill. wp_insert_post_data
+	 * is the single hook every insertion path converges on. The guards below keep the override
+	 * conservative: never touch updates, never overwrite content the caller supplied, never act on
+	 * revisions or the template post types themselves, and skip auto-draft inserts because those have
+	 * already passed through 'default_content'. Integrators can opt out per-call with the
+	 * 'abet_prefill_on_insert' filter.
+	 *
+	 * @param array<string, mixed> $data        Sanitized post data ready for insertion.
+	 * @param array<string, mixed> $postarr     The sanitized $postarr passed to wp_insert_post().
+	 * @param array<string, mixed> $unsanitized The raw $postarr passed to wp_insert_post().
+	 * @param bool                 $update      Whether this is an update of an existing post.
+	 *
+	 * @return array<string, mixed> The (possibly prefilled) post data.
+	 */
+	public static function prefill_on_insert( $data, $postarr, $unsanitized, $update ) {
+		if ( $update ) {
+			return $data;
+		}
+
+		if ( ! empty( $data['post_content'] ) ) {
+			return $data;
+		}
+
+		if ( empty( $data['post_type'] ) ) {
+			return $data;
+		}
+
+		// The admin "Add New" path already prefilled through 'default_content' before reaching here.
+		if ( 'auto-draft' === ( $data['post_status'] ?? '' ) ) {
+			return $data;
+		}
+
+		// Never prefill the template posts themselves or revision rows.
+		if ( in_array( $data['post_type'], [ 'revision', 'block-templates', 'pt-arch-templates', 'tax-arch-templates' ], true ) ) {
+			return $data;
+		}
+
+		/**
+		 * Filter whether this insert should be prefilled with the post-type template.
+		 *
+		 * @param bool                 $should  True to allow the prefill, false to skip it.
+		 * @param array<string, mixed> $data    The sanitized post data about to be inserted.
+		 * @param array<string, mixed> $postarr The raw post data passed to wp_insert_post().
+		 */
+		if ( ! apply_filters( 'abet_prefill_on_insert', true, $data, $postarr ) ) {
+			return $data;
+		}
+
+		$prefilled = self::get_prefill_content_for_post_type( $data['post_type'] );
+		if ( '' !== $prefilled ) {
+			// wp_insert_post() unslashes $data['post_content'] again, so re-slash for parity.
+			$data['post_content'] = wp_slash( $prefilled );
+		}
+
+		return $data;
+	}
+
+	/**
+	 * Programmatically copy a post type's template into an existing, empty post.
+	 *
+	 * Intended for integrators (importers, sync jobs, headless workflows) that want the prefill
+	 * without relying on self::prefill_on_insert() inferring intent from an empty content field.
+	 * Does nothing when the post already has content or no template is configured.
+	 *
+	 * @param int $post_id The post to prefill.
+	 *
+	 * @return bool True when content was written, false otherwise.
+	 */
+	public static function prefill_post( $post_id ) {
+		$post = get_post( $post_id );
+		if ( ! $post instanceof WP_Post || '' !== trim( (string) $post->post_content ) ) {
+			return false;
+		}
+
+		$prefilled = self::get_prefill_content_for_post_type( $post->post_type );
+		if ( '' === $prefilled ) {
+			return false;
+		}
+
+		$result = wp_update_post(
+			[
+				'ID'           => $post->ID,
+				'post_content' => $prefilled,
+			],
+			true
+		);
+
+		return ! is_wp_error( $result ) && 0 !== (int) $result;
+	}
+
+	/**
+	 * Resolve the prefill content for a given post type.
+	 *
+	 * Returns an empty string when no template is configured, the configured template is a draft, or
+	 * the template contains no blocks. parse_blocks() -> serialize_blocks() round-trips the original
+	 * markup as-is, so markup-sourced content (heading/paragraph text) is preserved without having
+	 * to read it back out of the HTML.
+	 *
+	 * @param string $post_type The post type slug.
+	 *
+	 * @return string The serialized block markup to prefill with, or an empty string.
+	 */
+	private static function get_prefill_content_for_post_type( $post_type ) {
+		if ( '' === (string) $post_type ) {
+			return '';
+		}
+
 		if ( ! self::$registered_blocks ) {
 			self::$registered_blocks = \WP_Block_Type_Registry::get_instance()->get_all_registered();
 		}
 
 		foreach ( self::get_post_type_template_posts() as $post_id ) {
-			if ( ! self::use_default_content( $post_id ) || get_post_meta( $post_id, '_template_for_posttype', true ) !== $post->post_type ) {
+			if ( ! self::use_default_content( $post_id ) || get_post_meta( $post_id, '_template_for_posttype', true ) !== $post_type ) {
 				continue;
 			}
 
 			$template_post = get_post( $post_id );
 			// A draft template is not applied: the plugin only uses published templates.
 			if ( ! $template_post || 'publish' !== $template_post->post_status || ! has_blocks( $template_post->post_content ) ) {
-				break;
+				return '';
 			}
 
-			// parse_blocks() -> serialize_blocks() round-trips the original markup as-is, so
-			// markup-sourced content (heading/paragraph text) is preserved with no HTML parsing.
 			$prefilled = serialize_blocks( self::apply_placeholders( parse_blocks( $template_post->post_content ) ) );
 
-			// Fall back to the original content rather than blanking the post if serialization yields nothing.
-			return '' !== trim( $prefilled ) ? $prefilled : $content;
+			return '' !== trim( $prefilled ) ? $prefilled : '';
 		}
 
-		return $content;
+		return '';
 	}
 
 	/**
