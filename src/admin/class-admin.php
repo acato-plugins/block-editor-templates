@@ -56,10 +56,9 @@ class Admin {
 	 */
 	public function __construct() {
 		add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'register_post_types' ] );
-		add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'register_template_meta' ] );
 		add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'create_post_type_posts' ], 100 );
-		add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'register_block_templates' ], 999 );
 		add_filter( 'default_content', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'set_default_content' ], 10, 2 );
+		add_filter( 'wp_insert_post_data', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'prefill_on_insert' ], 10, 4 );
 		add_action( 'admin_notices', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'stale_template_notice' ] );
 		add_action( 'admin_post_abet_trash_stale_template', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'trash_stale_template' ] );
 		add_action( 'admin_post_abet_trash_all_stale_templates', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'trash_all_stale_templates' ] );
@@ -67,8 +66,6 @@ class Admin {
 		add_action( 'admin_enqueue_scripts', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'enqueue_admin_assets' ] );
 		add_action( 'admin_menu', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'admin_menu' ] );
 		add_filter( 'display_post_states', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'add_display_post_states' ], 10, 2 );
-		add_filter( 'manage_block-templates_posts_columns', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'add_default_content_column' ] );
-		add_action( 'manage_block-templates_posts_custom_column', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'render_default_content_column' ], 10, 2 );
 
 		if ( ! wp_is_block_theme() ) {
 			add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'create_taxonomy_posts' ], 100 );
@@ -138,113 +135,6 @@ class Admin {
 	}
 
 	/**
-	 * Register block templates for all post types.
-	 *
-	 * @return void
-	 */
-	public static function register_block_templates() {
-		self::$registered_blocks = \WP_Block_Type_Registry::get_instance()->get_all_registered();
-
-		foreach ( self::get_post_type_template_posts() as $post_id ) {
-			// Templates that prefill new posts through default_content (see self::set_default_content())
-			// must not also register $object->template, which rebuilds each block via createBlock and
-			// therefore drops markup-sourced content such as a heading's or paragraph's text.
-			if ( self::use_default_content( $post_id ) ) {
-				continue;
-			}
-
-			$post_type = get_post_meta( $post_id, '_template_for_posttype', true );
-			$object    = get_post_type_object( $post_type );
-
-			if ( ! $object ) {
-				continue;
-			}
-
-			$post = get_post( $post_id );
-			if ( $post && has_blocks( $post->post_content ) ) {
-				$blocks   = parse_blocks( $post->post_content );
-				$template = self::blocks_to_template( $blocks );
-
-				if ( count( $template ) ) {
-					$object->template = $template;
-				}
-			}
-		}
-	}
-
-	/**
-	 * Convert Gutenberg blocks to a block template.
-	 *
-	 * @param array<mixed> $blocks An array of blocks as provide by parse_blocks().
-	 *
-	 * @return array<mixed> A block template.
-	 */
-	private static function blocks_to_template( $blocks ) {
-		$template = [];
-		foreach ( $blocks as $block ) {
-			if ( empty( $block['blockName'] ) ) {
-				continue;
-			}
-
-			if ( isset( $block['attrs']['textAsPlaceholder'], self::$registered_blocks[ $block['blockName'] ] ) && $block['attrs']['textAsPlaceholder'] ) {
-				$attributes = self::$registered_blocks[ $block['blockName'] ]->get_attributes();
-				foreach ( $attributes as $attribute_name => $attribute ) {
-					if ( isset( $attributes[ $attribute_name . 'Placeholder' ], $block['attrs'][ $attribute_name ] ) ) {
-						$block['attrs'][ $attribute_name . 'Placeholder' ] = $block['attrs'][ $attribute_name ];
-						unset( $block['attrs'][ $attribute_name ] );
-					}
-				}
-			}
-
-			$sub_template = [
-				$block['blockName'],
-				$block['attrs'] ?? [],
-				self::blocks_to_template( $block['innerBlocks'] ),
-				$block['innerHTML'] ?? '',
-				$block['innerContent'] ?? [],
-			];
-			$template[]   = $sub_template;
-		}
-
-		return $template;
-	}
-
-	/**
-	 * Register the per-template "prefill new posts" setting so it can be edited from the block editor.
-	 *
-	 * @return void
-	 */
-	public static function register_template_meta() {
-		register_post_meta(
-			'block-templates',
-			'_abet_use_default_content',
-			[
-				'type'          => 'boolean',
-				'default'       => false,
-				'single'        => true,
-				'show_in_rest'  => true,
-				'auth_callback' => static function ( $allowed, $meta_key, $post_id ) {
-					return current_user_can( 'edit_post', $post_id );
-				},
-			]
-		);
-	}
-
-	/**
-	 * Whether a given template should prefill new posts with its content instead of registering a post-type template.
-	 *
-	 * Driven by the per-template '_abet_use_default_content' setting (off by default), read directly so the
-	 * editor's value is authoritative.
-	 *
-	 * @param int $post_id The template post ID.
-	 *
-	 * @return bool True to use the default_content approach, false to register $object->template.
-	 */
-	private static function use_default_content( $post_id ) {
-		return (bool) get_post_meta( $post_id, '_abet_use_default_content', true );
-	}
-
-	/**
 	 * Get the (cached) IDs of all post-type template posts.
 	 *
 	 * @return int[] The template post IDs.
@@ -289,37 +179,152 @@ class Admin {
 			return $content;
 		}
 
+		$prefilled = self::get_prefill_content_for_post_type( $post->post_type );
+
+		// Fall back to the original content rather than blanking the post if no prefill is available.
+		return '' !== $prefilled ? $prefilled : $content;
+	}
+
+	/**
+	 * Prefill new posts inserted outside the admin "Add New" flow (REST, wp_insert_post(), WP-CLI).
+	 *
+	 * The 'default_content' filter only fires for get_default_post_to_edit(), so posts created via
+	 * the REST API, wp_insert_post(), or WP-CLI would otherwise miss the prefill. wp_insert_post_data
+	 * is the single hook every insertion path converges on. The guards below keep the override
+	 * conservative: never touch updates, never overwrite content the caller supplied, never act on
+	 * revisions or the template post types themselves, and skip auto-draft inserts because those have
+	 * already passed through 'default_content'. Integrators can opt out per-call with the
+	 * 'abet_prefill_on_insert' filter.
+	 *
+	 * @param array<string, mixed> $data        Sanitized post data ready for insertion.
+	 * @param array<string, mixed> $postarr     The sanitized $postarr passed to wp_insert_post().
+	 * @param array<string, mixed> $unsanitized The raw $postarr passed to wp_insert_post().
+	 * @param bool                 $update      Whether this is an update of an existing post.
+	 *
+	 * @return array<string, mixed> The (possibly prefilled) post data.
+	 */
+	public static function prefill_on_insert( $data, $postarr, $unsanitized, $update ) {
+		if ( $update ) {
+			return $data;
+		}
+
+		if ( ! empty( $data['post_content'] ) ) {
+			return $data;
+		}
+
+		if ( empty( $data['post_type'] ) ) {
+			return $data;
+		}
+
+		// The admin "Add New" path already prefilled through 'default_content' before reaching here.
+		if ( 'auto-draft' === ( $data['post_status'] ?? '' ) ) {
+			return $data;
+		}
+
+		// Never prefill the template posts themselves or revision rows.
+		if ( in_array( $data['post_type'], [ 'revision', 'block-templates', 'pt-arch-templates', 'tax-arch-templates' ], true ) ) {
+			return $data;
+		}
+
+		/**
+		 * Filter whether this insert should be prefilled with the post-type template.
+		 *
+		 * @param bool                 $should  True to allow the prefill, false to skip it.
+		 * @param array<string, mixed> $data    The sanitized post data about to be inserted.
+		 * @param array<string, mixed> $postarr The raw post data passed to wp_insert_post().
+		 */
+		if ( ! apply_filters( 'abet_prefill_on_insert', true, $data, $postarr ) ) {
+			return $data;
+		}
+
+		$prefilled = self::get_prefill_content_for_post_type( $data['post_type'] );
+		if ( '' !== $prefilled ) {
+			// wp_insert_post() unslashes $data['post_content'] again, so re-slash for parity.
+			$data['post_content'] = wp_slash( $prefilled );
+		}
+
+		return $data;
+	}
+
+	/**
+	 * Programmatically copy a post type's template into an existing, empty post.
+	 *
+	 * Intended for integrators (importers, sync jobs, headless workflows) that want the prefill
+	 * without relying on self::prefill_on_insert() inferring intent from an empty content field.
+	 * Does nothing when the post already has content or no template is configured.
+	 *
+	 * @param int $post_id The post to prefill.
+	 *
+	 * @return bool True when content was written, false otherwise.
+	 */
+	public static function prefill_post( $post_id ) {
+		$post = get_post( $post_id );
+		if ( ! $post instanceof WP_Post || '' !== trim( (string) $post->post_content ) ) {
+			return false;
+		}
+
+		$prefilled = self::get_prefill_content_for_post_type( $post->post_type );
+		if ( '' === $prefilled ) {
+			return false;
+		}
+
+		$result = wp_update_post(
+			[
+				'ID'           => $post->ID,
+				'post_content' => $prefilled,
+			],
+			true
+		);
+
+		return ! is_wp_error( $result ) && 0 !== (int) $result;
+	}
+
+	/**
+	 * Resolve the prefill content for a given post type.
+	 *
+	 * Returns an empty string when no template is configured, the configured template is a draft, or
+	 * the template contains no blocks. parse_blocks() -> serialize_blocks() round-trips the original
+	 * markup as-is, so markup-sourced content (heading/paragraph text) is preserved without having
+	 * to read it back out of the HTML.
+	 *
+	 * @param string $post_type The post type slug.
+	 *
+	 * @return string The serialized block markup to prefill with, or an empty string.
+	 */
+	private static function get_prefill_content_for_post_type( $post_type ) {
+		if ( '' === (string) $post_type ) {
+			return '';
+		}
+
 		if ( ! self::$registered_blocks ) {
 			self::$registered_blocks = \WP_Block_Type_Registry::get_instance()->get_all_registered();
 		}
 
 		foreach ( self::get_post_type_template_posts() as $post_id ) {
-			if ( ! self::use_default_content( $post_id ) || get_post_meta( $post_id, '_template_for_posttype', true ) !== $post->post_type ) {
+			if ( get_post_meta( $post_id, '_template_for_posttype', true ) !== $post_type ) {
 				continue;
 			}
 
 			$template_post = get_post( $post_id );
 			// A draft template is not applied: the plugin only uses published templates.
 			if ( ! $template_post || 'publish' !== $template_post->post_status || ! has_blocks( $template_post->post_content ) ) {
-				break;
+				return '';
 			}
 
-			// parse_blocks() -> serialize_blocks() round-trips the original markup as-is, so
-			// markup-sourced content (heading/paragraph text) is preserved with no HTML parsing.
 			$prefilled = serialize_blocks( self::apply_placeholders( parse_blocks( $template_post->post_content ) ) );
 
-			// Fall back to the original content rather than blanking the post if serialization yields nothing.
-			return '' !== trim( $prefilled ) ? $prefilled : $content;
+			return '' !== trim( $prefilled ) ? $prefilled : '';
 		}
 
-		return $content;
+		return '';
 	}
 
 	/**
 	 * Move the value of placeholder-enabled attributes into their "...Placeholder" counterpart.
 	 *
-	 * Mirrors the textAsPlaceholder handling of self::blocks_to_template() so the verbatim copy
-	 * keeps showing the configured text as a placeholder rather than as real content.
+	 * When a block has 'textAsPlaceholder' set, its configured text attribute is moved into the
+	 * matching '...Placeholder' attribute so the prefilled copy shows the configured text as a
+	 * placeholder rather than as real content.
 	 *
 	 * @param array<mixed> $blocks Blocks as provided by parse_blocks().
 	 *
@@ -931,9 +936,7 @@ class Admin {
 				'label'               => $post_type_single,
 				'description'         => (string) $settings['description'],
 				'labels'              => $labels,
-				// 'custom-fields' lets the REST API save registered post meta, such as the per-template
-				// '_abet_use_default_content' setting on block-templates (see self::register_template_meta()).
-				'supports'            => [ 'title', 'editor', 'custom-fields' ],
+				'supports'            => [ 'title', 'editor' ],
 				'taxonomies'          => [],
 				'hierarchical'        => false,
 				'public'              => false,
@@ -1120,55 +1123,6 @@ class Admin {
 		}
 
 		return $post_states;
-	}
-
-	/**
-	 * Add a "Prefill new posts" column to the block-templates list table.
-	 *
-	 * @param array<string, string> $columns The existing list-table columns.
-	 *
-	 * @return array<string, string> The columns with the prefill column added before the date.
-	 */
-	public static function add_default_content_column( $columns ) {
-		$date = $columns['date'] ?? null;
-		unset( $columns['date'] );
-
-		$help = __( 'Copy this template into new posts (keeping heading and paragraph text). Only applies when creating a post in the WordPress admin.', 'block-editor-templates' );
-
-		// The icon is a decorative mouse-hover hint (title); the help text is exposed to assistive
-		// technology as real text via screen-reader-text so it does not depend on the tooltip.
-		$columns['abet_default_content'] = sprintf(
-			'%1$s <span class="dashicons dashicons-editor-help" style="font-size:16px;width:16px;height:16px;vertical-align:text-bottom;cursor:help;" aria-hidden="true" title="%2$s"></span><span class="screen-reader-text">%3$s</span>',
-			esc_html__( 'Prefill new posts', 'block-editor-templates' ),
-			esc_attr( $help ),
-			esc_html( $help )
-		);
-
-		if ( null !== $date ) {
-			$columns['date'] = $date;
-		}
-
-		return $columns;
-	}
-
-	/**
-	 * Render the "Prefill new posts" column for a block-templates row.
-	 *
-	 * @param string $column  The current column key.
-	 * @param int    $post_id The current post ID.
-	 *
-	 * @return void
-	 */
-	public static function render_default_content_column( $column, $post_id ) {
-		if ( 'abet_default_content' !== $column ) {
-			return;
-		}
-
-		if ( self::use_default_content( $post_id ) ) {
-			printf( '<span class="dashicons dashicons-yes" aria-hidden="true"></span><span class="screen-reader-text">%s</span>', esc_html__( 'Prefill enabled', 'block-editor-templates' ) );
-		} else {
-			printf( '<span aria-hidden="true">&#8212;</span><span class="screen-reader-text">%s</span>', esc_html__( 'Prefill disabled', 'block-editor-templates' ) );
-		}
 	}
 
 	/**
