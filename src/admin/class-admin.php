@@ -190,6 +190,14 @@ class Admin {
 				continue;
 			}
 
+			// The block editor template format is [ name, attributes, innerBlocks ]; positions beyond
+			// innerBlocks are ignored by WordPress' synchronizeBlocksWithTemplate(). Attributes with a
+			// `source` (e.g. `html`/`attribute`) are parsed from the markup, not stored in the block's
+			// JSON attrs, so they are absent from $block['attrs']. Hydrate them from the innerHTML,
+			// otherwise all such content (paragraph/heading text, etc.) is lost when the template is
+			// applied to a new post.
+			$block['attrs'] = self::hydrate_sourced_attributes( $block );
+
 			if ( isset( $block['attrs']['textAsPlaceholder'], self::$registered_blocks[ $block['blockName'] ] ) && $block['attrs']['textAsPlaceholder'] ) {
 				$attributes = self::$registered_blocks[ $block['blockName'] ]->get_attributes();
 				foreach ( $attributes as $attribute_name => $attribute ) {
@@ -204,13 +212,135 @@ class Admin {
 				$block['blockName'],
 				$block['attrs'] ?? [],
 				self::blocks_to_template( $block['innerBlocks'] ),
-				$block['innerHTML'] ?? '',
-				$block['innerContent'] ?? [],
 			];
 			$template[]   = $sub_template;
 		}
 
 		return $template;
+	}
+
+	/**
+	 * Merge attribute values that are sourced from the block markup into the block's JSON attributes.
+	 *
+	 * Attributes declared with a `source` of `html` or `attribute` are not stored in the block comment
+	 * JSON; the block editor re-derives them from the saved HTML when a block is loaded. The block
+	 * template format only carries the JSON attributes, so these sourced values must be extracted from
+	 * the block's innerHTML and injected into the attributes for them to survive template application.
+	 *
+	 * @param array<mixed> $block A single block as provided by parse_blocks().
+	 *
+	 * @return array<string, mixed> The block attributes with sourced values merged in.
+	 */
+	private static function hydrate_sourced_attributes( $block ) {
+		$attrs = $block['attrs'] ?? [];
+
+		if ( empty( self::$registered_blocks[ $block['blockName'] ] ) ) {
+			return $attrs;
+		}
+
+		$schema     = self::$registered_blocks[ $block['blockName'] ]->get_attributes();
+		$inner_html = $block['innerHTML'] ?? '';
+
+		if ( empty( $schema ) || '' === trim( $inner_html ) ) {
+			return $attrs;
+		}
+
+		$dom = new \DOMDocument();
+		// Wrap in a container so the fragment is parsed reliably and load without adding a doctype/body.
+		libxml_use_internal_errors( true );
+		$loaded = $dom->loadHTML(
+			'<?xml encoding="utf-8"?><div id="abet-root">' . $inner_html . '</div>',
+			LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+		);
+		libxml_clear_errors();
+
+		if ( ! $loaded ) {
+			return $attrs;
+		}
+
+		$root  = $dom->getElementById( 'abet-root' );
+		$xpath = new \DOMXPath( $dom );
+
+		foreach ( $schema as $attribute_name => $definition ) {
+			// Never overwrite a value that was explicitly stored in the block JSON.
+			if ( isset( $attrs[ $attribute_name ] ) ) {
+				continue;
+			}
+
+			$source = $definition['source'] ?? '';
+			if ( 'html' !== $source && 'attribute' !== $source ) {
+				continue;
+			}
+
+			$node = self::select_sourced_node( $root, $xpath, $definition['selector'] ?? '' );
+			if ( null === $node ) {
+				continue;
+			}
+
+			if ( 'attribute' === $source ) {
+				$attribute = $definition['attribute'] ?? '';
+				if ( '' !== $attribute && $node instanceof \DOMElement && $node->hasAttribute( $attribute ) ) {
+					$attrs[ $attribute_name ] = $node->getAttribute( $attribute );
+				}
+				continue;
+			}
+
+			// source === 'html': the inner HTML of the matched node.
+			$html = '';
+			foreach ( $node->childNodes as $child ) {
+				$html .= $dom->saveHTML( $child );
+			}
+			$attrs[ $attribute_name ] = $html;
+		}
+
+		return $attrs;
+	}
+
+	/**
+	 * Resolve the DOM node for a sourced attribute selector.
+	 *
+	 * Block attribute selectors are CSS selectors, but only the simple forms used by these blocks are
+	 * supported: a comma-separated list of tag names and/or a single class selector. When no selector
+	 * is given, the block root node itself is used (matching the block editor behaviour).
+	 *
+	 * @param \DOMElement|null $root     The block root element.
+	 * @param \DOMXPath        $xpath    An XPath instance bound to the document.
+	 * @param string           $selector The CSS selector from the attribute definition.
+	 *
+	 * @return \DOMNode|null The first matching node, or null.
+	 */
+	private static function select_sourced_node( $root, $xpath, $selector ) {
+		if ( ! $root ) {
+			return null;
+		}
+
+		$selector = trim( $selector );
+		if ( '' === $selector ) {
+			return $root;
+		}
+
+		$queries = [];
+		foreach ( explode( ',', $selector ) as $part ) {
+			$part = trim( $part );
+			if ( '' === $part ) {
+				continue;
+			}
+			if ( 0 === strpos( $part, '.' ) ) {
+				$class     = substr( $part, 1 );
+				$queries[] = ".//*[contains(concat(' ', normalize-space(@class), ' '), ' " . $class . " ')]";
+			} else {
+				$queries[] = './/' . $part;
+			}
+		}
+
+		foreach ( $queries as $query ) {
+			$nodes = $xpath->query( $query, $root );
+			if ( $nodes && $nodes->length ) {
+				return $nodes->item( 0 );
+			}
+		}
+
+		return null;
 	}
 
 	/**
