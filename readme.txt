@@ -4,7 +4,7 @@ Tags: block editor, gutenberg, block templates
 Requires at least: 5.0
 Tested up to: 7.0.1
 Requires PHP: 7.2
-Stable tag: 1.0.7
+Stable tag: 1.1.0
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl.html
 
@@ -63,6 +63,18 @@ Give the block a `{base}Placeholder` attribute (e.g. `content` → `contentPlace
 You can report security bugs through the Patchstack Vulnerability Disclosure Program. The Patchstack team helps validate, triage and handle any security vulnerabilities. [Report a security vulnerability.]( https://patchstack.com/database/vdp/398f3310-d285-4489-ae3b-07b8ab344119 )
 
 == Changelog ==
+
+= 1.1.0 =
+Release Date: July 14th, 2026
+
+Feature: New posts can now be prefilled with a template's content. This is configurable per template and shown in a "Prefill new posts" column in the templates list.
+Feature: Added advanced placeholder options: a "Use content as placeholder" toggle on supported blocks, an in-editor placeholder badge, and per-attribute validation. See docs/placeholder-support.md.
+Feature: The template editor now inherits the target post type's allowed block types.
+Feature: Special pages (such as the 404 page) are now data-driven and filterable by developers.
+Feature: Added a Dutch (nl_NL) translation.
+Fix: Fixed missing content when a block template is applied to a new post.
+Fix: Fixed the 404 template lookup for classic themes.
+Fix: Guarded wp_is_block_theme() so the plugin keeps working on the declared WordPress 5.0 minimum.
 
 = 1.0.7 =
 Release Date: March 9th, 2026
