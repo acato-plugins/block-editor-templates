@@ -435,14 +435,13 @@ class Admin {
 			return;
 		}
 
-		$script_asset_path = ABET_ABSPATH . ABET_ASSETS_DIR . 'admin.asset.php';
-		$script_asset      = file_exists( $script_asset_path ) ? require $script_asset_path : [];
+		$script_asset = self::script_asset();
 
 		wp_enqueue_script(
 			'block-editor-templates-admin',
 			ABET_ASSETS_URL . 'admin.js',
 			$script_asset['dependencies'] ?? [],
-			self::asset_version( 'admin.js', $script_asset['version'] ?? ABET_VERSION ),
+			$script_asset['version'] ?? ABET_VERSION,
 			false
 		);
 
@@ -474,46 +473,24 @@ class Admin {
 			'block-editor-templates-admin',
 			ABET_ASSETS_URL . 'admin.css',
 			[],
-			self::asset_version( 'admin.css', ABET_VERSION )
+			self::script_asset()['version'] ?? ABET_VERSION
 		);
 	}
 
 	/**
-	 * Resolve the version string for an enqueued asset.
+	 * Load the build manifest that `npm run build` writes next to the compiled assets.
 	 *
-	 * In a local or development environment (WP_ENV) the file's modification time is used, so every
-	 * rebuild busts the browser cache and you never stare at a stale JS/CSS file. Everywhere else the
-	 * stable release version is kept, so production caching works as intended.
+	 * The manifest's `version` is a content hash covering every file in the entry chunk - the JavaScript
+	 * and the extracted CSS alike - so it changes on any rebuild that changes the output, in every
+	 * environment, and stays stable otherwise. That makes it a better cache-buster than a plugin version
+	 * bump or a file modification time: it never busts the cache needlessly and never keeps it too long.
 	 *
-	 * @param string     $file     The asset file name, relative to the assets directory.
-	 * @param string|int $fallback The version to use outside development.
-	 *
-	 * @return string|int The resolved version.
+	 * @return array{dependencies?: string[], version?: string} The manifest, or an empty array when absent.
 	 */
-	private static function asset_version( $file, $fallback ) {
-		if ( self::is_development() ) {
-			$path = ABET_ABSPATH . ABET_ASSETS_DIR . $file;
-			if ( file_exists( $path ) ) {
-				return (string) filemtime( $path );
-			}
-		}
+	private static function script_asset() {
+		$path = ABET_ABSPATH . ABET_ASSETS_DIR . 'admin.asset.php';
 
-		return $fallback;
-	}
-
-	/**
-	 * Whether the site is running in a local or development environment.
-	 *
-	 * Driven by the WP_ENV environment variable (read from $_ENV, falling back to getenv() because
-	 * $_ENV is only populated when PHP's variables_order includes "E").
-	 *
-	 * @return bool True for a local or development environment.
-	 */
-	private static function is_development() {
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Compared against a fixed allow-list after sanitize_key().
-		$env = isset( $_ENV['WP_ENV'] ) ? $_ENV['WP_ENV'] : getenv( 'WP_ENV' );
-
-		return in_array( sanitize_key( (string) $env ), [ 'local', 'development' ], true );
+		return file_exists( $path ) ? require $path : [];
 	}
 
 	/**
