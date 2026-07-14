@@ -71,7 +71,7 @@ class Admin {
 		add_filter( 'manage_block-templates_posts_columns', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'add_default_content_column' ] );
 		add_action( 'manage_block-templates_posts_custom_column', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'render_default_content_column' ], 10, 2 );
 
-		if ( ! wp_is_block_theme() ) {
+		if ( ! self::is_block_theme() ) {
 			add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'create_taxonomy_posts' ], 100 );
 			add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'create_special_pages' ], 100 );
 			add_filter( 'archive_template', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'get_custom_archive' ] );
@@ -79,6 +79,19 @@ class Admin {
 			// Load the template for special pages (e.g. the 404 page).
 			add_filter( 'template_include', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'set_special_template' ], 99 );
 		}
+	}
+
+	/**
+	 * Whether the active theme is a block theme.
+	 *
+	 * Guards wp_is_block_theme(), which only exists since WordPress 5.9, so the plugin keeps working on
+	 * the WordPress 5.0 minimum it declares support for: without the function the site cannot be a block
+	 * theme, so treating it as classic is the correct fallback.
+	 *
+	 * @return bool True when the active theme is a block theme.
+	 */
+	private static function is_block_theme() {
+		return function_exists( 'wp_is_block_theme' ) && wp_is_block_theme();
 	}
 
 	/**
@@ -130,7 +143,7 @@ class Admin {
 					'only_for_has_archive' => false,
 				],
 			];
-			if ( wp_is_block_theme() ) {
+			if ( self::is_block_theme() ) {
 				unset( $post_types['pt-arch-templates'], $post_types['tax-arch-templates'], $post_types['special-templates'] );
 			}
 		}
