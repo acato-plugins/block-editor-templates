@@ -244,11 +244,17 @@ class Admin {
 		$proxy_context = new \WP_Block_Editor_Context(
 			[
 				'name' => $context->name,
-				'post' => new \WP_Post( (object) [ 'ID' => 0, 'post_type' => $target_post_type ] ),
+				'post' => new \WP_Post(
+					(object) [
+						'ID'        => 0,
+						'post_type' => $target_post_type,
+					]
+				),
 			]
 		);
 
-		$running             = true;
+		$running = true;
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Deliberately re-applying WordPress core's own filter, not defining a plugin hook.
 		$allowed_block_types = apply_filters( 'allowed_block_types_all', $allowed_block_types, $proxy_context );
 		$running             = false;
 
