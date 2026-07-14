@@ -54,6 +54,10 @@ Yes! You can create your own template inside your (sub)theme. Simply name it one
 
 You can read more about the distinction between these types of themes in [the WordPress Developer Resources](https://developer.wordpress.org/themes/getting-started/what-is-a-theme/#theme-types).
 
+= I'm a developer. How do I let a block's content be used as placeholder text in a template? =
+
+Give the block a `{base}Placeholder` attribute (e.g. `content` → `contentPlaceholder`) of the same type as the content attribute, and render it as the placeholder in the block's edit component. The plugin then automatically adds a "Use content as placeholder" toggle to that block; you do not add the `textAsPlaceholder` attribute yourself. See `docs/placeholder-support.md` for a full walkthrough.
+
 = How can I report security bugs? =
 
 You can report security bugs through the Patchstack Vulnerability Disclosure Program. The Patchstack team helps validate, triage and handle any security vulnerabilities. [Report a security vulnerability.]( https://patchstack.com/database/vdp/398f3310-d285-4489-ae3b-07b8ab344119 )
