@@ -10,7 +10,7 @@ import {
 } from '@wordpress/components';
 import { createHigherOrderComponent } from '@wordpress/compose';
 import { useSelect } from '@wordpress/data';
-import { Fragment, useCallback, useMemo } from '@wordpress/element';
+import { Fragment, useCallback, useEffect, useMemo } from '@wordpress/element';
 import { addFilter } from '@wordpress/hooks';
 import { __, sprintf } from '@wordpress/i18n';
 import { settings as settingsIcon } from '@wordpress/icons';
@@ -39,6 +39,16 @@ const PLACEHOLDER_SUFFIX = 'Placeholder';
  * @type {string}
  */
 const CONTROL_ATTRIBUTE = 'textAsPlaceholder';
+
+/**
+ * Whether an attribute holds a non-empty value worth moving between a base
+ * attribute and its placeholder counterpart.
+ *
+ * @param {*} value - The attribute value.
+ * @return {boolean} True when the value is set and not empty.
+ */
+const hasValue = (value) =>
+	value !== undefined && value !== null && value !== '';
 
 /**
  * Collect the `{attr}Placeholder` attribute keys of a block's attribute schema,
@@ -221,15 +231,39 @@ const withPlaceholderControls = createHigherOrderComponent(
 			validPairs.forEach(({ baseKey, placeholderKey }) => {
 				const fromKey = enabling ? baseKey : placeholderKey;
 				const toKey = enabling ? placeholderKey : baseKey;
-				const value = attributes[fromKey];
 
-				if (value !== undefined && value !== null && value !== '') {
-					updates[toKey] = value;
+				if (hasValue(attributes[fromKey])) {
+					updates[toKey] = attributes[fromKey];
 					updates[fromKey] = '';
 				}
 			});
 
 			setAttributes(updates);
+		}, [isOwnEnabled, validPairs, attributes, setAttributes]);
+
+		// One-time normalisation for templates authored before the toggle moved content on the fly:
+		// a block already flagged as placeholder whose value still sits in the base attribute (with an
+		// empty placeholder) has that value moved across on load. The empty-placeholder guard makes this
+		// idempotent — once the value has moved it never fires again, so typing later is left untouched.
+		useEffect(() => {
+			if (!isOwnEnabled) {
+				return;
+			}
+
+			const updates = {};
+			validPairs.forEach(({ baseKey, placeholderKey }) => {
+				if (
+					hasValue(attributes[baseKey]) &&
+					!hasValue(attributes[placeholderKey])
+				) {
+					updates[placeholderKey] = attributes[baseKey];
+					updates[baseKey] = '';
+				}
+			});
+
+			if (Object.keys(updates).length) {
+				setAttributes(updates);
+			}
 		}, [isOwnEnabled, validPairs, attributes, setAttributes]);
 
 		return (
