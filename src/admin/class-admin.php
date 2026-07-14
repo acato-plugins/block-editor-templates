@@ -56,13 +56,20 @@ class Admin {
 	 */
 	public function __construct() {
 		add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'register_post_types' ] );
+		add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'register_template_meta' ] );
 		add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'create_post_type_posts' ], 100 );
 		add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'register_block_templates' ], 999 );
+		add_filter( 'default_content', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'set_default_content' ], 10, 2 );
+		add_action( 'admin_notices', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'stale_template_notice' ] );
+		add_action( 'admin_post_abet_trash_stale_template', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'trash_stale_template' ] );
+		add_action( 'admin_post_abet_trash_all_stale_templates', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'trash_all_stale_templates' ] );
 		add_filter( 'post_row_actions', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'remove_row_actions' ], 10, 2 );
 		add_action( 'admin_enqueue_scripts', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'enqueue_admin_assets' ] );
 		add_action( 'admin_menu', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'admin_menu' ] );
 		add_filter( 'display_post_states', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'add_display_post_states' ], 10, 2 );
 		add_filter( 'allowed_block_types_all', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'inherit_allowed_block_types' ], PHP_INT_MAX, 2 );
+		add_filter( 'manage_block-templates_posts_columns', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'add_default_content_column' ] );
+		add_action( 'manage_block-templates_posts_custom_column', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'render_default_content_column' ], 10, 2 );
 
 		if ( ! wp_is_block_theme() ) {
 			add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'create_taxonomy_posts' ], 100 );
@@ -139,25 +146,14 @@ class Admin {
 	public static function register_block_templates() {
 		self::$registered_blocks = \WP_Block_Type_Registry::get_instance()->get_all_registered();
 
-		// Get all templates.
-		$cache_key      = 'abet_posts_with_meta_' . md5( '_template_for_posttype' );
-		$template_posts = wp_cache_get( $cache_key );
+		foreach ( self::get_post_type_template_posts() as $post_id ) {
+			// Templates that prefill new posts through default_content (see self::set_default_content())
+			// must not also register $object->template, which rebuilds each block via createBlock and
+			// therefore drops markup-sourced content such as a heading's or paragraph's text.
+			if ( self::use_default_content( $post_id ) ) {
+				continue;
+			}
 
-		if ( false === $template_posts ) {
-			$template_posts = get_posts(
-				[
-					'numberposts' => -1,
-					'post_type'   => [ 'block-templates', 'pt-arch-templates', 'tax-arch-templates' ],
-					'post_status' => 'any',
-					// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- This is cached.
-					'meta_key'    => '_template_for_posttype',
-					'fields'      => 'ids',
-				]
-			);
-			wp_cache_set( $cache_key, $template_posts, '', HOUR_IN_SECONDS );
-		}
-
-		foreach ( $template_posts as $post_id ) {
 			$post_type = get_post_meta( $post_id, '_template_for_posttype', true );
 			$object    = get_post_type_object( $post_type );
 
@@ -260,6 +256,146 @@ class Admin {
 	}
 
 	/**
+	 * Register the per-template "prefill new posts" setting so it can be edited from the block editor.
+	 *
+	 * @return void
+	 */
+	public static function register_template_meta() {
+		register_post_meta(
+			'block-templates',
+			'_abet_use_default_content',
+			[
+				'type'          => 'boolean',
+				'default'       => false,
+				'single'        => true,
+				'show_in_rest'  => true,
+				'auth_callback' => static function ( $allowed, $meta_key, $post_id ) {
+					return current_user_can( 'edit_post', $post_id );
+				},
+			]
+		);
+	}
+
+	/**
+	 * Whether a given template should prefill new posts with its content instead of registering a post-type template.
+	 *
+	 * Driven by the per-template '_abet_use_default_content' setting (off by default), read directly so the
+	 * editor's value is authoritative.
+	 *
+	 * @param int $post_id The template post ID.
+	 *
+	 * @return bool True to use the default_content approach, false to register $object->template.
+	 */
+	private static function use_default_content( $post_id ) {
+		return (bool) get_post_meta( $post_id, '_abet_use_default_content', true );
+	}
+
+	/**
+	 * Get the (cached) IDs of all post-type template posts.
+	 *
+	 * @return int[] The template post IDs.
+	 */
+	private static function get_post_type_template_posts() {
+		$cache_key      = 'abet_posts_with_meta_' . md5( '_template_for_posttype' );
+		$template_posts = wp_cache_get( $cache_key );
+
+		if ( false === $template_posts ) {
+			$template_posts = get_posts(
+				[
+					'numberposts' => -1,
+					'post_type'   => [ 'block-templates', 'pt-arch-templates', 'tax-arch-templates' ],
+					'post_status' => 'any',
+					// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- This is cached.
+					'meta_key'    => '_template_for_posttype',
+					'fields'      => 'ids',
+				]
+			);
+			wp_cache_set( $cache_key, $template_posts, '', HOUR_IN_SECONDS );
+		}
+
+		return $template_posts ? $template_posts : [];
+	}
+
+	/**
+	 * Prefill a new post with its post-type template content.
+	 *
+	 * Unlike registering $object->template (which the editor rebuilds with createBlock, dropping
+	 * any markup-sourced attributes such as a heading's or paragraph's text), this copies the
+	 * template's blocks verbatim into the new post. serialize_blocks() round-trips the original
+	 * markup, so sourced content is preserved without having to read it back out of the HTML.
+	 *
+	 * @param string  $content The default post content.
+	 * @param WP_Post $post    The post being created.
+	 *
+	 * @return string The (possibly prefilled) default content.
+	 */
+	public static function set_default_content( $content, $post ) {
+		// Only act on an empty new post.
+		if ( ! empty( $content ) || ! $post instanceof WP_Post || empty( $post->post_type ) ) {
+			return $content;
+		}
+
+		if ( ! self::$registered_blocks ) {
+			self::$registered_blocks = \WP_Block_Type_Registry::get_instance()->get_all_registered();
+		}
+
+		foreach ( self::get_post_type_template_posts() as $post_id ) {
+			if ( ! self::use_default_content( $post_id ) || get_post_meta( $post_id, '_template_for_posttype', true ) !== $post->post_type ) {
+				continue;
+			}
+
+			$template_post = get_post( $post_id );
+			// A draft template is not applied: the plugin only uses published templates.
+			if ( ! $template_post || 'publish' !== $template_post->post_status || ! has_blocks( $template_post->post_content ) ) {
+				break;
+			}
+
+			// parse_blocks() -> serialize_blocks() round-trips the original markup as-is, so
+			// markup-sourced content (heading/paragraph text) is preserved with no HTML parsing.
+			$prefilled = serialize_blocks( self::apply_placeholders( parse_blocks( $template_post->post_content ) ) );
+
+			// Fall back to the original content rather than blanking the post if serialization yields nothing.
+			return '' !== trim( $prefilled ) ? $prefilled : $content;
+		}
+
+		return $content;
+	}
+
+	/**
+	 * Move the value of placeholder-enabled attributes into their "...Placeholder" counterpart.
+	 *
+	 * Mirrors the textAsPlaceholder handling of self::blocks_to_template() so the verbatim copy
+	 * keeps showing the configured text as a placeholder rather than as real content.
+	 *
+	 * @param array<mixed> $blocks Blocks as provided by parse_blocks().
+	 *
+	 * @return array<mixed> The blocks with placeholder attributes applied.
+	 */
+	private static function apply_placeholders( $blocks ) {
+		foreach ( $blocks as &$block ) {
+			if ( empty( $block['blockName'] ) || ! isset( self::$registered_blocks[ $block['blockName'] ] ) ) {
+				continue;
+			}
+
+			if ( ! empty( $block['attrs']['textAsPlaceholder'] ) ) {
+				$attributes = self::$registered_blocks[ $block['blockName'] ]->get_attributes();
+				foreach ( $attributes as $attribute_name => $attribute ) {
+					if ( isset( $attributes[ $attribute_name . 'Placeholder' ], $block['attrs'][ $attribute_name ] ) ) {
+						$block['attrs'][ $attribute_name . 'Placeholder' ] = $block['attrs'][ $attribute_name ];
+						unset( $block['attrs'][ $attribute_name ] );
+					}
+				}
+			}
+
+			if ( ! empty( $block['innerBlocks'] ) ) {
+				$block['innerBlocks'] = self::apply_placeholders( $block['innerBlocks'] );
+			}
+		}
+
+		return $blocks;
+	}
+
+	/**
 	 * Enqueue assets for dynamic blocks for the admin.
 	 *
 	 * @return void
@@ -298,6 +434,244 @@ class Admin {
 				$script_asset['version'] ?? ABET_VERSION
 			);
 		}
+	}
+
+	/**
+	 * Whether a post type is edited with the block editor.
+	 *
+	 * The show_in_rest flag does not by itself imply block-editor support, so a post type can be exposed
+	 * to the REST API yet have no editor. Use WordPress' own check when it is available and fall back
+	 * to the block editor's minimum requirements (REST support and an editor) otherwise.
+	 *
+	 * @param string $post_type The post type slug.
+	 *
+	 * @return bool True when the post type uses the block editor.
+	 */
+	private static function uses_block_editor( $post_type ) {
+		// Taxonomy archive templates store a taxonomy slug, not a post type, so guard against those.
+		if ( ! post_type_exists( $post_type ) ) {
+			return false;
+		}
+
+		if ( function_exists( 'use_block_editor_for_post_type' ) ) {
+			return use_block_editor_for_post_type( $post_type );
+		}
+
+		// Before WordPress 6.1 use_block_editor_for_post_type() lived in wp-admin/includes/post.php, which
+		// is not loaded yet on the 'init' hook where create_post_type_posts() runs. In that case fall back
+		// to the same requirements it checks (REST support and an editor), minus its filter.
+		$object = get_post_type_object( $post_type );
+
+		return $object && $object->show_in_rest && post_type_supports( $post_type, 'editor' );
+	}
+
+	/**
+	 * Find Post Type Template posts created for a post type that no longer uses the block editor.
+	 *
+	 * Unregistered post types are skipped on purpose (e.g. a temporarily-deactivated plugin), so the
+	 * editor is only nudged about templates that exist for a post type which is present but editor-less.
+	 *
+	 * @return array<int, string> Map of post ID to template title.
+	 */
+	private static function get_stale_post_type_templates() {
+		$stale = [];
+
+		foreach ( self::get_post_type_template_posts() as $post_id ) {
+			if ( 'block-templates' !== get_post_type( $post_id ) || 'trash' === get_post_status( $post_id ) ) {
+				continue;
+			}
+
+			$post_type = get_post_meta( $post_id, '_template_for_posttype', true );
+			if ( empty( $post_type ) || 'general_template' === $post_type ) {
+				continue;
+			}
+
+			if ( post_type_exists( $post_type ) && ! self::uses_block_editor( $post_type ) ) {
+				$stale[ $post_id ] = get_the_title( $post_id );
+			}
+		}
+
+		return $stale;
+	}
+
+	/**
+	 * Show an admin notice for stale Post Type Templates, with a per-template "Move to Trash" button.
+	 *
+	 * The notice leaves the decision to the editor; nothing is trashed automatically.
+	 *
+	 * @return void
+	 */
+	public static function stale_template_notice() {
+		$screen = get_current_screen();
+		if ( ! $screen || 'edit-block-templates' !== $screen->id ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only success count for display.
+		$trashed = isset( $_GET['abet_trashed'] ) ? absint( wp_unslash( $_GET['abet_trashed'] ) ) : 0;
+		if ( $trashed > 0 ) {
+			printf(
+				'<div class="notice notice-success is-dismissible"><p>%s</p></div>',
+				/* translators: %d: number of templates moved to the trash. */
+				esc_html( sprintf( _n( '%d template moved to the trash.', '%d templates moved to the trash.', $trashed, 'block-editor-templates' ), $trashed ) )
+			);
+		}
+
+		// Only list templates the current user is actually allowed to trash.
+		$stale = [];
+		foreach ( self::get_stale_post_type_templates() as $post_id => $title ) {
+			if ( current_user_can( 'delete_post', $post_id ) ) {
+				$stale[ $post_id ] = $title;
+			}
+		}
+		if ( empty( $stale ) ) {
+			return;
+		}
+
+		echo '<div class="notice notice-error">';
+
+		if ( count( $stale ) > 1 ) {
+			// Multiple templates: an intro line followed by a real list, so the relationship is conveyed semantically.
+			printf( '<p>%s</p>', esc_html__( 'These Post Type Templates exist for post types that no longer use the block editor. You can move them to the trash:', 'block-editor-templates' ) );
+			echo '<ul style="list-style:disc;margin-left:20px;">';
+			foreach ( $stale as $post_id => $title ) {
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Both parts are escaped in the helpers.
+				printf( '<li>%1$s &mdash; %2$s</li>', esc_html( self::stale_template_label( $post_id, $title ) ), self::stale_template_trash_link( $post_id, $title ) );
+			}
+			echo '</ul>';
+
+			// Bulk action. The handler re-derives the stale set server-side, so only templates without
+			// a block editor are trashed regardless of what is submitted.
+			printf(
+				'<p><a href="%1$s" class="button button-link-delete">%2$s</a></p>',
+				esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=abet_trash_all_stale_templates' ), 'abet_trash_all_stale_templates' ) ),
+				esc_html__( 'Move all to Trash', 'block-editor-templates' )
+			);
+		} else {
+			// A single template reads better as a sentence; a one-item list is just noise for screen readers.
+			reset( $stale );
+			$post_id = key( $stale );
+			$title   = current( $stale );
+
+			printf(
+				'<p>%1$s %2$s</p>',
+				esc_html(
+					sprintf(
+						/* translators: %s: template title. */
+						__( 'The Post Type Template “%s” exists for a post type that no longer uses the block editor.', 'block-editor-templates' ),
+						self::stale_template_label( $post_id, $title )
+					)
+				),
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Helper returns escaped anchor markup (esc_url/esc_html).
+				self::stale_template_trash_link( $post_id, $title )
+			);
+		}
+
+		echo '</div>';
+	}
+
+	/**
+	 * Build the human label for a stale template, falling back to the post ID when it has no title.
+	 *
+	 * @param int    $post_id The template post ID.
+	 * @param string $title   The template post title.
+	 *
+	 * @return string The label.
+	 */
+	private static function stale_template_label( $post_id, $title ) {
+		/* translators: %d: template post ID. */
+		return '' !== trim( (string) $title ) ? (string) $title : sprintf( __( 'Template #%d', 'block-editor-templates' ), $post_id );
+	}
+
+	/**
+	 * Build a nonce-protected "Move to Trash" link for a stale template.
+	 *
+	 * The visible text is identical for every template, so the template name is exposed to assistive
+	 * technology through screen-reader-text. That keeps each link uniquely identifiable when navigating
+	 * by links, without repeating the name visually.
+	 *
+	 * @param int    $post_id The template post ID.
+	 * @param string $title   The template post title.
+	 *
+	 * @return string Escaped anchor markup.
+	 */
+	private static function stale_template_trash_link( $post_id, $title ) {
+		$url = wp_nonce_url(
+			add_query_arg(
+				[
+					'action' => 'abet_trash_stale_template',
+					'post'   => $post_id,
+				],
+				admin_url( 'admin-post.php' )
+			),
+			'abet_trash_stale_template_' . $post_id
+		);
+
+		return sprintf(
+			'<a href="%1$s" class="button-link-delete">%2$s<span class="screen-reader-text">%3$s</span></a>',
+			esc_url( $url ),
+			esc_html__( 'Move to Trash', 'block-editor-templates' ),
+			esc_html( ': ' . self::stale_template_label( $post_id, $title ) )
+		);
+	}
+
+	/**
+	 * Handle the "Move to Trash" action from self::stale_template_notice().
+	 *
+	 * @return void
+	 */
+	public static function trash_stale_template() {
+		$post_id = isset( $_GET['post'] ) ? absint( wp_unslash( $_GET['post'] ) ) : 0;
+
+		if ( ! $post_id || 'block-templates' !== get_post_type( $post_id ) || ! current_user_can( 'delete_post', $post_id ) ) {
+			wp_die( esc_html__( 'You are not allowed to trash this template.', 'block-editor-templates' ) );
+		}
+
+		check_admin_referer( 'abet_trash_stale_template_' . $post_id );
+
+		wp_trash_post( $post_id );
+
+		wp_safe_redirect(
+			add_query_arg(
+				[
+					'post_type'    => 'block-templates',
+					'abet_trashed' => 1,
+				],
+				admin_url( 'edit.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Handle the "Move all to Trash" action from self::stale_template_notice().
+	 *
+	 * The stale set is re-derived here rather than taken from the request, so only Post Type Templates
+	 * whose post type no longer uses the block editor are trashed, and only those the user may delete.
+	 *
+	 * @return void
+	 */
+	public static function trash_all_stale_templates() {
+		check_admin_referer( 'abet_trash_all_stale_templates' );
+
+		$trashed = 0;
+		foreach ( self::get_stale_post_type_templates() as $post_id => $title ) {
+			if ( current_user_can( 'delete_post', $post_id ) ) {
+				wp_trash_post( $post_id );
+				++$trashed;
+			}
+		}
+
+		wp_safe_redirect(
+			add_query_arg(
+				[
+					'post_type'    => 'block-templates',
+					'abet_trashed' => $trashed,
+				],
+				admin_url( 'edit.php' )
+			)
+		);
+		exit;
 	}
 
 	/**
@@ -345,6 +719,12 @@ class Admin {
 			}
 
 			$filtered_registered_post_types = array_keys( $filtered_registered_post_types );
+
+			// A Post Type Template is edited in the block editor, so only offer it for post types
+			// that actually use the block editor. show_in_rest alone does not imply editor support.
+			if ( false === $settings['general_template'] ) {
+				$filtered_registered_post_types = array_values( array_filter( $filtered_registered_post_types, [ self::class, 'uses_block_editor' ] ) );
+			}
 
 			// Get all posts that have the meta field.
 			// Get all posts that have the meta field.
@@ -630,7 +1010,9 @@ class Admin {
 				'label'               => $post_type_single,
 				'description'         => (string) $settings['description'],
 				'labels'              => $labels,
-				'supports'            => [ 'title', 'editor' ],
+				// 'custom-fields' lets the REST API save registered post meta, such as the per-template
+				// '_abet_use_default_content' setting on block-templates (see self::register_template_meta()).
+				'supports'            => [ 'title', 'editor', 'custom-fields' ],
 				'taxonomies'          => [],
 				'hierarchical'        => false,
 				'public'              => false,
@@ -817,6 +1199,55 @@ class Admin {
 		}
 
 		return $post_states;
+	}
+
+	/**
+	 * Add a "Prefill new posts" column to the block-templates list table.
+	 *
+	 * @param array<string, string> $columns The existing list-table columns.
+	 *
+	 * @return array<string, string> The columns with the prefill column added before the date.
+	 */
+	public static function add_default_content_column( $columns ) {
+		$date = $columns['date'] ?? null;
+		unset( $columns['date'] );
+
+		$help = __( 'Copy this template into new posts (keeping heading and paragraph text). Only applies when creating a post in the WordPress admin.', 'block-editor-templates' );
+
+		// The icon is a decorative mouse-hover hint (title); the help text is exposed to assistive
+		// technology as real text via screen-reader-text so it does not depend on the tooltip.
+		$columns['abet_default_content'] = sprintf(
+			'%1$s <span class="dashicons dashicons-editor-help" style="font-size:16px;width:16px;height:16px;vertical-align:text-bottom;cursor:help;" aria-hidden="true" title="%2$s"></span><span class="screen-reader-text">%3$s</span>',
+			esc_html__( 'Prefill new posts', 'block-editor-templates' ),
+			esc_attr( $help ),
+			esc_html( $help )
+		);
+
+		if ( null !== $date ) {
+			$columns['date'] = $date;
+		}
+
+		return $columns;
+	}
+
+	/**
+	 * Render the "Prefill new posts" column for a block-templates row.
+	 *
+	 * @param string $column  The current column key.
+	 * @param int    $post_id The current post ID.
+	 *
+	 * @return void
+	 */
+	public static function render_default_content_column( $column, $post_id ) {
+		if ( 'abet_default_content' !== $column ) {
+			return;
+		}
+
+		if ( self::use_default_content( $post_id ) ) {
+			printf( '<span class="dashicons dashicons-yes" aria-hidden="true"></span><span class="screen-reader-text">%s</span>', esc_html__( 'Prefill enabled', 'block-editor-templates' ) );
+		} else {
+			printf( '<span aria-hidden="true">&#8212;</span><span class="screen-reader-text">%s</span>', esc_html__( 'Prefill disabled', 'block-editor-templates' ) );
+		}
 	}
 
 	/**
