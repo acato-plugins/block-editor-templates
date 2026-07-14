@@ -65,6 +65,7 @@ class Admin {
 		add_action( 'admin_post_abet_trash_all_stale_templates', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'trash_all_stale_templates' ] );
 		add_filter( 'post_row_actions', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'remove_row_actions' ], 10, 2 );
 		add_action( 'admin_enqueue_scripts', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'enqueue_admin_assets' ] );
+		add_action( 'enqueue_block_assets', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'enqueue_block_editor_styles' ] );
 		add_action( 'admin_menu', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'admin_menu' ] );
 		add_filter( 'display_post_states', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'add_display_post_states' ], 10, 2 );
 		add_filter( 'allowed_block_types_all', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'inherit_allowed_block_types' ], PHP_INT_MAX, 2 );
@@ -447,15 +448,34 @@ class Admin {
 
 		// Load the editor UI's JavaScript translations (generated with `wp i18n make-json`).
 		wp_set_script_translations( 'block-editor-templates-admin', 'block-editor-templates', ABET_ABSPATH . 'languages' );
+	}
 
-		if ( file_exists( ABET_ABSPATH . ABET_ASSETS_DIR . 'admin.css' ) ) {
-			wp_enqueue_style(
-				'block-editor-templates-admin',
-				ABET_ASSETS_URL . 'admin.css',
-				[],
-				$script_asset['version'] ?? ABET_VERSION
-			);
+	/**
+	 * Enqueue the placeholder badge styling into the block editor canvas.
+	 *
+	 * The badge is drawn on block wrappers, which live inside the editor's iframed canvas since
+	 * WordPress 6.3. Styles enqueued on admin_enqueue_scripts only reach the outer admin document, so
+	 * the badge stylesheet must go through enqueue_block_assets instead - that is the hook whose styles
+	 * WordPress injects into the canvas iframe. The is_admin() guard keeps it out of the front end.
+	 *
+	 * @return void
+	 */
+	public static function enqueue_block_editor_styles() {
+		if ( ! is_admin() || ! file_exists( ABET_ABSPATH . ABET_ASSETS_DIR . 'admin.css' ) ) {
+			return;
 		}
+
+		$screen = get_current_screen();
+		if ( $screen && 'block-templates' !== $screen->post_type ) {
+			return;
+		}
+
+		wp_enqueue_style(
+			'block-editor-templates-admin',
+			ABET_ASSETS_URL . 'admin.css',
+			[],
+			ABET_VERSION
+		);
 	}
 
 	/**
@@ -1234,7 +1254,7 @@ class Admin {
 		$date = $columns['date'] ?? null;
 		unset( $columns['date'] );
 
-		$help = __( 'Copy this template into new posts (keeping heading and paragraph text). Only applies when creating a post in the WordPress admin.', 'block-editor-templates' );
+		$help = __( 'When enabled, new posts of this post type start with this template’s blocks and the content entered in them. When disabled, new posts get only the empty block structure. Only applies when creating a post in the WordPress admin.', 'block-editor-templates' );
 
 		// The icon is a decorative mouse-hover hint (title); the help text is exposed to assistive
 		// technology as real text via screen-reader-text so it does not depend on the tooltip.

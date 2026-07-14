@@ -10,7 +10,7 @@ import {
 } from '@wordpress/components';
 import { createHigherOrderComponent } from '@wordpress/compose';
 import { useSelect } from '@wordpress/data';
-import { Fragment, useMemo } from '@wordpress/element';
+import { Fragment, useCallback, useMemo } from '@wordpress/element';
 import { addFilter } from '@wordpress/hooks';
 import { __, sprintf } from '@wordpress/i18n';
 import { settings as settingsIcon } from '@wordpress/icons';
@@ -209,6 +209,29 @@ const withPlaceholderControls = createHigherOrderComponent(
 		);
 		const isOwnEnabled = !!attributes[CONTROL_ATTRIBUTE];
 
+		// Toggle the flag and move each pair's value between the base attribute and its
+		// `{base}Placeholder` counterpart, so enabling stores the typed content as placeholder
+		// text (and clears the real content) while disabling restores it. The move is done here,
+		// in the editor, because content sourced from block markup (e.g. a heading's or
+		// paragraph's text) never reaches PHP as a plain attribute.
+		const onToggle = useCallback(() => {
+			const enabling = !isOwnEnabled;
+			const updates = { [CONTROL_ATTRIBUTE]: enabling };
+
+			validPairs.forEach(({ baseKey, placeholderKey }) => {
+				const fromKey = enabling ? baseKey : placeholderKey;
+				const toKey = enabling ? placeholderKey : baseKey;
+				const value = attributes[fromKey];
+
+				if (value !== undefined && value !== null && value !== '') {
+					updates[toKey] = value;
+					updates[fromKey] = '';
+				}
+			});
+
+			setAttributes(updates);
+		}, [isOwnEnabled, validPairs, attributes, setAttributes]);
+
 		return (
 			<Fragment>
 				<BlockEdit {...props} />
@@ -310,17 +333,13 @@ const withPlaceholderControls = createHigherOrderComponent(
 													'block-editor-templates'
 												)
 											: __(
-													'When on, this block’s content is stored as placeholder text. New posts created from this template start with it as an editable hint instead of real content.',
+													'When on, the text you typed is moved into this block’s placeholder attribute and shown as a greyed-out hint. New posts created from this template start with that hint instead of real content. Turn it off to move the text back.',
 													'block-editor-templates'
 												)
 									}
 									checked={ancestorEnabled || isOwnEnabled}
 									disabled={ancestorEnabled}
-									onChange={() =>
-										setAttributes({
-											[CONTROL_ATTRIBUTE]: !isOwnEnabled,
-										})
-									}
+									onChange={onToggle}
 								/>
 							</PanelRow>
 						) : (

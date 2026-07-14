@@ -48,7 +48,7 @@ const AbetDefaultContentPanel = () => {
 					'block-editor-templates'
 				)}
 				help={__(
-					'Copy this template into new posts (keeping heading and paragraph text). Only applies when creating a post in the WordPress admin.',
+					'When enabled, new posts of this post type start with this template’s blocks and the content entered in them. When disabled, new posts get only the empty block structure. Only applies when creating a post in the WordPress admin.',
 					'block-editor-templates'
 				)}
 				checked={!!meta[META_KEY]}
