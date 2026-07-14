@@ -1,0 +1,153 @@
+# Dutch translation for the Block Editor Templates plugin.
+# This file is distributed under the same license as the Block Editor Templates plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: Block Editor Templates 1.0.7\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/block-editor-templates\n"
+"Last-Translator: Acato <support@acato.nl>\n"
+"Language-Team: Dutch <nl@li.org>\n"
+"Language: nl_NL\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Domain: block-editor-templates\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. Description of the plugin
+msgid "Templates for the WordPress Block Editor."
+msgstr "Sjablonen voor de WordPress blokeditor."
+
+msgctxt "posttype single name global used"
+msgid "Post Type Template"
+msgstr "Berichttype-sjabloon"
+
+msgctxt "posttype plural name global used"
+msgid "Post Type Templates"
+msgstr "Berichttype-sjablonen"
+
+msgctxt "posttype description"
+msgid "Templates that are applied to each new post of the matching post type."
+msgstr "Sjablonen die worden toegepast op elk nieuw bericht van het bijbehorende berichttype."
+
+msgctxt "posttype single name global used"
+msgid "Post Type Archive Template"
+msgstr "Berichttype-archiefsjabloon"
+
+msgctxt "posttype plural name global used"
+msgid "Post Type Archive Templates"
+msgstr "Berichttype-archiefsjablonen"
+
+msgctxt "posttype description"
+msgid "Templates that render the archive page of the matching post type."
+msgstr "Sjablonen die de archiefpagina van het bijbehorende berichttype weergeven."
+
+msgctxt "posttype single name global used"
+msgid "Taxonomy Archive Template"
+msgstr "Taxonomie-archiefsjabloon"
+
+msgctxt "posttype plural name global used"
+msgid "Taxonomy Archive Templates"
+msgstr "Taxonomie-archiefsjablonen"
+
+msgctxt "posttype description"
+msgid "Templates that render the archive page of the matching taxonomy."
+msgstr "Sjablonen die de archiefpagina van de bijbehorende taxonomie weergeven."
+
+msgctxt "posttype single name global used"
+msgid "Special Template"
+msgstr "Speciaal sjabloon"
+
+msgctxt "posttype plural name global used"
+msgid "Special Templates"
+msgstr "Speciale sjablonen"
+
+msgctxt "posttype description"
+msgid "Templates for special pages, such as the 404 page."
+msgstr "Sjablonen voor speciale pagina's, zoals de 404-pagina."
+
+#, php-format
+msgid "%d template moved to the trash."
+msgid_plural "%d templates moved to the trash."
+msgstr[0] "%d sjabloon naar de prullenbak verplaatst."
+msgstr[1] "%d sjablonen naar de prullenbak verplaatst."
+
+msgid "These Post Type Templates exist for post types that no longer use the block editor. You can move them to the trash:"
+msgstr "Deze berichttype-sjablonen bestaan voor berichttypen die de blokeditor niet meer gebruiken. Je kunt ze naar de prullenbak verplaatsen:"
+
+msgid "Move all to Trash"
+msgstr "Alles naar de prullenbak verplaatsen"
+
+#, php-format
+msgid "The Post Type Template “%s” exists for a post type that no longer uses the block editor."
+msgstr "Het berichttype-sjabloon “%s” bestaat voor een berichttype dat de blokeditor niet meer gebruikt."
+
+#, php-format
+msgid "Template #%d"
+msgstr "Sjabloon #%d"
+
+msgid "Move to Trash"
+msgstr "Naar de prullenbak verplaatsen"
+
+msgid "You are not allowed to trash this template."
+msgstr "Je hebt geen toestemming om dit sjabloon naar de prullenbak te verplaatsen."
+
+msgid "_General Template"
+msgstr "_Algemeen sjabloon"
+
+msgid "404 page"
+msgstr "404-pagina"
+
+msgid "View"
+msgstr "Bekijken"
+
+msgid "Add New"
+msgstr "Nieuwe toevoegen"
+
+#. translators: %s: CPT name
+#, php-format
+msgid "Add New %s"
+msgstr "Nieuwe %s toevoegen"
+
+#. translators: %s: CPT name
+#, php-format
+msgid "Edit %s"
+msgstr "%s bewerken"
+
+#. translators: %s: CPT name
+#, php-format
+msgid "New %s"
+msgstr "Nieuwe %s"
+
+#. translators: %s: CPT name
+#, php-format
+msgid "All %s"
+msgstr "Alle %s"
+
+#. translators: %s: CPT name
+#, php-format
+msgid "View %s"
+msgstr "%s bekijken"
+
+#. translators: %s: CPT name
+#, php-format
+msgid "Search %s"
+msgstr "%s zoeken"
+
+#. translators: %s: CPT name
+#, php-format
+msgid "No %s found"
+msgstr "Geen %s gevonden"
+
+#. translators: %s: CPT name
+#, php-format
+msgid "No %s found in trash"
+msgstr "Geen %s gevonden in de prullenbak"
+
+msgid "Item is deleted"
+msgstr "Item is verwijderd"
+
+msgid "Placeholder options"
+msgstr "Placeholder-opties"
+
+msgid "Use text as placeholder"
+msgstr "Tekst als placeholder gebruiken"
