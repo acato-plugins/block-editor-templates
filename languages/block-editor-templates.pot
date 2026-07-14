@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-06-04T09:58:17+00:00\n"
+"POT-Creation-Date: 2026-07-14T09:41:22+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: block-editor-templates\n"
@@ -35,139 +35,240 @@ msgstr ""
 msgid "Acato"
 msgstr ""
 
-#: src/admin/class-admin.php:89
+#: src/admin/class-admin.php:97
 msgctxt "posttype single name global used"
 msgid "Post Type Template"
 msgstr ""
 
-#: src/admin/class-admin.php:90
+#: src/admin/class-admin.php:98
 msgctxt "posttype plural name global used"
 msgid "Post Type Templates"
 msgstr ""
 
-#: src/admin/class-admin.php:91
+#: src/admin/class-admin.php:99
 msgctxt "posttype description"
 msgid "Templates that are applied to each new post of the matching post type."
 msgstr ""
 
-#: src/admin/class-admin.php:98
+#: src/admin/class-admin.php:106
 msgctxt "posttype single name global used"
 msgid "Post Type Archive Template"
 msgstr ""
 
-#: src/admin/class-admin.php:99
+#: src/admin/class-admin.php:107
 msgctxt "posttype plural name global used"
 msgid "Post Type Archive Templates"
 msgstr ""
 
-#: src/admin/class-admin.php:100
+#: src/admin/class-admin.php:108
 msgctxt "posttype description"
 msgid "Templates that render the archive page of the matching post type."
 msgstr ""
 
-#: src/admin/class-admin.php:107
+#: src/admin/class-admin.php:115
 msgctxt "posttype single name global used"
 msgid "Taxonomy Archive Template"
 msgstr ""
 
-#: src/admin/class-admin.php:108
+#: src/admin/class-admin.php:116
 msgctxt "posttype plural name global used"
 msgid "Taxonomy Archive Templates"
 msgstr ""
 
-#: src/admin/class-admin.php:109
+#: src/admin/class-admin.php:117
 msgctxt "posttype description"
 msgid "Templates that render the archive page of the matching taxonomy."
 msgstr ""
 
-#: src/admin/class-admin.php:116
+#: src/admin/class-admin.php:124
 msgctxt "posttype single name global used"
 msgid "Special Template"
 msgstr ""
 
-#: src/admin/class-admin.php:117
+#: src/admin/class-admin.php:125
 msgctxt "posttype plural name global used"
 msgid "Special Templates"
 msgstr ""
 
-#: src/admin/class-admin.php:118
+#: src/admin/class-admin.php:126
 msgctxt "posttype description"
 msgid "Templates for special pages, such as the 404 page."
 msgstr ""
 
-#: src/admin/class-admin.php:327
-#: src/admin/class-admin.php:406
+#. translators: %d: number of templates moved to the trash.
+#: src/admin/class-admin.php:516
+#, php-format
+msgid "%d template moved to the trash."
+msgid_plural "%d templates moved to the trash."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/admin/class-admin.php:535
+msgid "These Post Type Templates exist for post types that no longer use the block editor. You can move them to the trash:"
+msgstr ""
+
+#: src/admin/class-admin.php:548
+msgid "Move all to Trash"
+msgstr ""
+
+#. translators: %s: template title.
+#: src/admin/class-admin.php:561
+#, php-format
+msgid "The Post Type Template “%s” exists for a post type that no longer uses the block editor."
+msgstr ""
+
+#. translators: %d: template post ID.
+#: src/admin/class-admin.php:583
+#, php-format
+msgid "Template #%d"
+msgstr ""
+
+#: src/admin/class-admin.php:613
+msgid "Move to Trash"
+msgstr ""
+
+#: src/admin/class-admin.php:627
+msgid "You are not allowed to trash this template."
+msgstr ""
+
+#: src/admin/class-admin.php:762
+#: src/admin/class-admin.php:841
 msgid "_General Template"
 msgstr ""
 
-#: src/admin/class-admin.php:450
+#: src/admin/class-admin.php:895
 msgid "404 page"
 msgstr ""
 
-#: src/admin/class-admin.php:507
+#: src/admin/class-admin.php:966
 msgid "View"
 msgstr ""
 
-#: src/admin/class-admin.php:530
+#: src/admin/class-admin.php:989
 msgid "Add New"
 msgstr ""
 
 #. translators: %s: CPT name
-#: src/admin/class-admin.php:532
+#: src/admin/class-admin.php:991
 #, php-format
 msgid "Add New %s"
 msgstr ""
 
 #. translators: %s: CPT name
-#: src/admin/class-admin.php:534
+#: src/admin/class-admin.php:993
 #, php-format
 msgid "Edit %s"
 msgstr ""
 
 #. translators: %s: CPT name
-#: src/admin/class-admin.php:536
+#: src/admin/class-admin.php:995
 #, php-format
 msgid "New %s"
 msgstr ""
 
 #. translators: %s: CPT name
-#: src/admin/class-admin.php:538
+#: src/admin/class-admin.php:997
 #, php-format
 msgid "All %s"
 msgstr ""
 
 #. translators: %s: CPT name
-#: src/admin/class-admin.php:540
+#: src/admin/class-admin.php:999
 #, php-format
 msgid "View %s"
 msgstr ""
 
 #. translators: %s: CPT name
-#: src/admin/class-admin.php:542
+#: src/admin/class-admin.php:1001
 #, php-format
 msgid "Search %s"
 msgstr ""
 
 #. translators: %s: CPT name
-#: src/admin/class-admin.php:544
+#: src/admin/class-admin.php:1003
 #, php-format
 msgid "No %s found"
 msgstr ""
 
 #. translators: %s: CPT name
-#: src/admin/class-admin.php:546
+#: src/admin/class-admin.php:1005
 #, php-format
 msgid "No %s found in trash"
 msgstr ""
 
-#: src/admin/class-admin.php:737
+#: src/admin/class-admin.php:1198
 msgid "Item is deleted"
 msgstr ""
 
-#: src/admin/assets/src/abet-filters.js:61
+#: src/admin/class-admin.php:1215
+#: src/admin/assets/src/default-content-panel.js:44
+msgid "Copy this template into new posts (keeping heading and paragraph text). Only applies when creating a post in the WordPress admin."
+msgstr ""
+
+#: src/admin/class-admin.php:1221
+msgid "Prefill new posts"
+msgstr ""
+
+#: src/admin/class-admin.php:1247
+msgid "Prefill enabled"
+msgstr ""
+
+#: src/admin/class-admin.php:1249
+msgid "Prefill disabled"
+msgstr ""
+
+#: src/admin/assets/src/abet-filters.js:217
 msgid "Placeholder options"
 msgstr ""
 
-#: src/admin/assets/src/abet-filters.js:64
-msgid "Use text as placeholder"
+#. translators: 1: placeholder attribute name, 2: expected base attribute name.
+#: src/admin/assets/src/abet-filters.js:234
+#, js-format
+msgid "“%1$s” is set, but its matching attribute “%2$s” does not exist on this block, so it cannot be used as a placeholder."
+msgstr ""
+
+#. translators: 1: suggested placeholder attribute name (e.g. "contentPlaceholder"), 2: existing base attribute name (e.g. "content").
+#: src/admin/assets/src/abet-filters.js:244
+#, js-format
+msgid "Did you mean “%1$s”? This block has a matching “%2$s” attribute."
+msgstr ""
+
+#. translators: %s: comma-separated list of suggested placeholder attribute names.
+#: src/admin/assets/src/abet-filters.js:255
+#, js-format
+msgid "Did you perhaps mean one of: %s?"
+msgstr ""
+
+#. translators: 1: placeholder attribute name, 2: placeholder data-type, 3: base attribute name, 4: base data-type.
+#: src/admin/assets/src/abet-filters.js:282
+#, js-format
+msgid "Type mismatch: “%1$s” (%2$s) must be the same data-type as “%3$s” (%4$s)."
+msgstr ""
+
+#: src/admin/assets/src/abet-filters.js:302
+msgid "Use content as placeholder"
+msgstr ""
+
+#: src/admin/assets/src/abet-filters.js:308
+msgid "Inherited from a parent block: this block’s content is already used as placeholder text."
+msgstr ""
+
+#: src/admin/assets/src/abet-filters.js:312
+msgid "When on, this block’s content is stored as placeholder text. New posts created from this template start with it as an editable hint instead of real content."
+msgstr ""
+
+#: src/admin/assets/src/abet-filters.js:328
+msgid "This block has no valid placeholder attributes to toggle."
+msgstr ""
+
+#: src/admin/assets/src/abet-filters.js:391
+msgid "Used as placeholder"
+msgstr ""
+
+#: src/admin/assets/src/default-content-panel.js:40
+msgid "Post Type Template"
+msgstr ""
+
+#: src/admin/assets/src/default-content-panel.js:43
+msgid "Prefill new posts with this template"
 msgstr ""

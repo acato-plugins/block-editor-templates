@@ -426,6 +426,9 @@ class Admin {
 			false
 		);
 
+		// Load the editor UI's JavaScript translations (generated with `wp i18n make-json`).
+		wp_set_script_translations( 'block-editor-templates-admin', 'block-editor-templates', ABET_ABSPATH . 'languages' );
+
 		if ( file_exists( ABET_ABSPATH . ABET_ASSETS_DIR . 'admin.css' ) ) {
 			wp_enqueue_style(
 				'block-editor-templates-admin',
