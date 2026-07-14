@@ -22,13 +22,6 @@ use WP_Post;
 class Admin {
 
 	/**
-	 * An Array of block registered within this WordPress instance.
-	 *
-	 * @var \WP_Block_Type[] $registered_blocks
-	 */
-	private static $registered_blocks;
-
-	/**
 	 * The singleton instance of this class.
 	 *
 	 * @access private
@@ -57,7 +50,7 @@ class Admin {
 	public function __construct() {
 		add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'register_post_types' ] );
 		add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'create_post_type_posts' ], 100 );
-		add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'register_block_templates' ], 999 );
+		add_filter( 'default_content', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'prefill_default_content' ], 10, 2 );
 		add_filter( 'post_row_actions', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'remove_row_actions' ], 10, 2 );
 		add_action( 'admin_enqueue_scripts', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'enqueue_admin_assets' ] );
 		add_action( 'admin_menu', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'admin_menu' ] );
@@ -131,14 +124,47 @@ class Admin {
 	}
 
 	/**
-	 * Register block templates for all post types.
+	 * Pre-fill the content of a new post with its block template.
 	 *
-	 * @return void
+	 * Hooked on `default_content`, which WordPress applies to a brand-new (auto-draft) post before the
+	 * editor loads. Returning the template post's raw `post_content` seeds the editor with the exact
+	 * blocks as authored in the template - including all inner content - because the block editor parses
+	 * this content verbatim. This is deliberately preferred over registering a post type `template`
+	 * array: the block-editor template format only carries the JSON block attributes and drops content
+	 * sourced from the block markup (e.g. paragraph/heading text stored via `source: html`), so any
+	 * block whose content is not held in its JSON attributes would lose that content.
+	 *
+	 * @param string   $content The default post content.
+	 * @param \WP_Post $post    The post being created.
+	 *
+	 * @return string The (possibly pre-filled) post content.
 	 */
-	public static function register_block_templates() {
-		self::$registered_blocks = \WP_Block_Type_Registry::get_instance()->get_all_registered();
+	public static function prefill_default_content( $content, $post ) {
+		// Respect content explicitly requested (e.g. via the `content` request parameter).
+		if ( '' !== $content ) {
+			return $content;
+		}
 
-		// Get all templates.
+		if ( ! $post instanceof \WP_Post || empty( $post->post_type ) ) {
+			return $content;
+		}
+
+		$template_post = self::get_template_post_for_post_type( $post->post_type );
+		if ( ! $template_post || ! has_blocks( $template_post->post_content ) ) {
+			return $content;
+		}
+
+		return $template_post->post_content;
+	}
+
+	/**
+	 * Find the block template post that pre-fills a given post type.
+	 *
+	 * @param string $post_type The post type to find a template for.
+	 *
+	 * @return \WP_Post|null The template post, or null when none is defined.
+	 */
+	private static function get_template_post_for_post_type( $post_type ) {
 		$cache_key      = 'abet_posts_with_meta_' . md5( '_template_for_posttype' );
 		$template_posts = wp_cache_get( $cache_key );
 
@@ -157,186 +183,8 @@ class Admin {
 		}
 
 		foreach ( $template_posts as $post_id ) {
-			$post_type = get_post_meta( $post_id, '_template_for_posttype', true );
-			$object    = get_post_type_object( $post_type );
-
-			if ( ! $object ) {
-				continue;
-			}
-
-			$post = get_post( $post_id );
-			if ( $post && has_blocks( $post->post_content ) ) {
-				$blocks   = parse_blocks( $post->post_content );
-				$template = self::blocks_to_template( $blocks );
-
-				if ( count( $template ) ) {
-					$object->template = $template;
-				}
-			}
-		}
-	}
-
-	/**
-	 * Convert Gutenberg blocks to a block template.
-	 *
-	 * @param array<mixed> $blocks An array of blocks as provide by parse_blocks().
-	 *
-	 * @return array<mixed> A block template.
-	 */
-	private static function blocks_to_template( $blocks ) {
-		$template = [];
-		foreach ( $blocks as $block ) {
-			if ( empty( $block['blockName'] ) ) {
-				continue;
-			}
-
-			// The block editor template format is [ name, attributes, innerBlocks ]; positions beyond
-			// innerBlocks are ignored by WordPress' synchronizeBlocksWithTemplate(). Attributes with a
-			// `source` (e.g. `html`/`attribute`) are parsed from the markup, not stored in the block's
-			// JSON attrs, so they are absent from $block['attrs']. Hydrate them from the innerHTML,
-			// otherwise all such content (paragraph/heading text, etc.) is lost when the template is
-			// applied to a new post.
-			$block['attrs'] = self::hydrate_sourced_attributes( $block );
-
-			if ( isset( $block['attrs']['textAsPlaceholder'], self::$registered_blocks[ $block['blockName'] ] ) && $block['attrs']['textAsPlaceholder'] ) {
-				$attributes = self::$registered_blocks[ $block['blockName'] ]->get_attributes();
-				foreach ( $attributes as $attribute_name => $attribute ) {
-					if ( isset( $attributes[ $attribute_name . 'Placeholder' ], $block['attrs'][ $attribute_name ] ) ) {
-						$block['attrs'][ $attribute_name . 'Placeholder' ] = $block['attrs'][ $attribute_name ];
-						unset( $block['attrs'][ $attribute_name ] );
-					}
-				}
-			}
-
-			$sub_template = [
-				$block['blockName'],
-				$block['attrs'] ?? [],
-				self::blocks_to_template( $block['innerBlocks'] ),
-			];
-			$template[]   = $sub_template;
-		}
-
-		return $template;
-	}
-
-	/**
-	 * Merge attribute values that are sourced from the block markup into the block's JSON attributes.
-	 *
-	 * Attributes declared with a `source` of `html` or `attribute` are not stored in the block comment
-	 * JSON; the block editor re-derives them from the saved HTML when a block is loaded. The block
-	 * template format only carries the JSON attributes, so these sourced values must be extracted from
-	 * the block's innerHTML and injected into the attributes for them to survive template application.
-	 *
-	 * @param array<mixed> $block A single block as provided by parse_blocks().
-	 *
-	 * @return array<string, mixed> The block attributes with sourced values merged in.
-	 */
-	private static function hydrate_sourced_attributes( $block ) {
-		$attrs = $block['attrs'] ?? [];
-
-		if ( empty( self::$registered_blocks[ $block['blockName'] ] ) ) {
-			return $attrs;
-		}
-
-		$schema     = self::$registered_blocks[ $block['blockName'] ]->get_attributes();
-		$inner_html = $block['innerHTML'] ?? '';
-
-		if ( empty( $schema ) || '' === trim( $inner_html ) ) {
-			return $attrs;
-		}
-
-		$dom = new \DOMDocument();
-		// Wrap in a container so the fragment is parsed reliably and load without adding a doctype/body.
-		libxml_use_internal_errors( true );
-		$loaded = $dom->loadHTML(
-			'<?xml encoding="utf-8"?><div id="abet-root">' . $inner_html . '</div>',
-			LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
-		);
-		libxml_clear_errors();
-
-		if ( ! $loaded ) {
-			return $attrs;
-		}
-
-		$root  = $dom->getElementById( 'abet-root' );
-		$xpath = new \DOMXPath( $dom );
-
-		foreach ( $schema as $attribute_name => $definition ) {
-			// Never overwrite a value that was explicitly stored in the block JSON.
-			if ( isset( $attrs[ $attribute_name ] ) ) {
-				continue;
-			}
-
-			$source = $definition['source'] ?? '';
-			if ( 'html' !== $source && 'attribute' !== $source ) {
-				continue;
-			}
-
-			$node = self::select_sourced_node( $root, $xpath, $definition['selector'] ?? '' );
-			if ( null === $node ) {
-				continue;
-			}
-
-			if ( 'attribute' === $source ) {
-				$attribute = $definition['attribute'] ?? '';
-				if ( '' !== $attribute && $node instanceof \DOMElement && $node->hasAttribute( $attribute ) ) {
-					$attrs[ $attribute_name ] = $node->getAttribute( $attribute );
-				}
-				continue;
-			}
-
-			// source === 'html': the inner HTML of the matched node.
-			$html = '';
-			foreach ( $node->childNodes as $child ) {
-				$html .= $dom->saveHTML( $child );
-			}
-			$attrs[ $attribute_name ] = $html;
-		}
-
-		return $attrs;
-	}
-
-	/**
-	 * Resolve the DOM node for a sourced attribute selector.
-	 *
-	 * Block attribute selectors are CSS selectors, but only the simple forms used by these blocks are
-	 * supported: a comma-separated list of tag names and/or a single class selector. When no selector
-	 * is given, the block root node itself is used (matching the block editor behaviour).
-	 *
-	 * @param \DOMElement|null $root     The block root element.
-	 * @param \DOMXPath        $xpath    An XPath instance bound to the document.
-	 * @param string           $selector The CSS selector from the attribute definition.
-	 *
-	 * @return \DOMNode|null The first matching node, or null.
-	 */
-	private static function select_sourced_node( $root, $xpath, $selector ) {
-		if ( ! $root ) {
-			return null;
-		}
-
-		$selector = trim( $selector );
-		if ( '' === $selector ) {
-			return $root;
-		}
-
-		$queries = [];
-		foreach ( explode( ',', $selector ) as $part ) {
-			$part = trim( $part );
-			if ( '' === $part ) {
-				continue;
-			}
-			if ( 0 === strpos( $part, '.' ) ) {
-				$class     = substr( $part, 1 );
-				$queries[] = ".//*[contains(concat(' ', normalize-space(@class), ' '), ' " . $class . " ')]";
-			} else {
-				$queries[] = './/' . $part;
-			}
-		}
-
-		foreach ( $queries as $query ) {
-			$nodes = $xpath->query( $query, $root );
-			if ( $nodes && $nodes->length ) {
-				return $nodes->item( 0 );
+			if ( $post_type === get_post_meta( $post_id, '_template_for_posttype', true ) ) {
+				return get_post( $post_id );
 			}
 		}
 
