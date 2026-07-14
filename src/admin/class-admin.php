@@ -289,6 +289,15 @@ class Admin {
 			$script_asset['version'] ?? ABET_VERSION,
 			false
 		);
+
+		if ( file_exists( ABET_ABSPATH . ABET_ASSETS_DIR . 'admin.css' ) ) {
+			wp_enqueue_style(
+				'block-editor-templates-admin',
+				ABET_ASSETS_URL . 'admin.css',
+				[],
+				$script_asset['version'] ?? ABET_VERSION
+			);
+		}
 	}
 
 	/**
