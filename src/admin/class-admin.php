@@ -442,7 +442,7 @@ class Admin {
 			'block-editor-templates-admin',
 			ABET_ASSETS_URL . 'admin.js',
 			$script_asset['dependencies'] ?? [],
-			$script_asset['version'] ?? ABET_VERSION,
+			self::asset_version( 'admin.js', $script_asset['version'] ?? ABET_VERSION ),
 			false
 		);
 
@@ -474,8 +474,46 @@ class Admin {
 			'block-editor-templates-admin',
 			ABET_ASSETS_URL . 'admin.css',
 			[],
-			ABET_VERSION
+			self::asset_version( 'admin.css', ABET_VERSION )
 		);
+	}
+
+	/**
+	 * Resolve the version string for an enqueued asset.
+	 *
+	 * In a local or development environment (WP_ENV) the file's modification time is used, so every
+	 * rebuild busts the browser cache and you never stare at a stale JS/CSS file. Everywhere else the
+	 * stable release version is kept, so production caching works as intended.
+	 *
+	 * @param string     $file     The asset file name, relative to the assets directory.
+	 * @param string|int $fallback The version to use outside development.
+	 *
+	 * @return string|int The resolved version.
+	 */
+	private static function asset_version( $file, $fallback ) {
+		if ( self::is_development() ) {
+			$path = ABET_ABSPATH . ABET_ASSETS_DIR . $file;
+			if ( file_exists( $path ) ) {
+				return (string) filemtime( $path );
+			}
+		}
+
+		return $fallback;
+	}
+
+	/**
+	 * Whether the site is running in a local or development environment.
+	 *
+	 * Driven by the WP_ENV environment variable (read from $_ENV, falling back to getenv() because
+	 * $_ENV is only populated when PHP's variables_order includes "E").
+	 *
+	 * @return bool True for a local or development environment.
+	 */
+	private static function is_development() {
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Compared against a fixed allow-list after sanitize_key().
+		$env = isset( $_ENV['WP_ENV'] ) ? $_ENV['WP_ENV'] : getenv( 'WP_ENV' );
+
+		return in_array( sanitize_key( (string) $env ), [ 'local', 'development' ], true );
 	}
 
 	/**
