@@ -55,30 +55,30 @@ class Admin {
 	 * @since    1.0.0
 	 */
 	public function __construct() {
-		add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'register_post_types' ] );
-		add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'register_template_meta' ] );
-		add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'create_post_type_posts' ], 100 );
-		add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'register_block_templates' ], 999 );
-		add_filter( 'default_content', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'set_default_content' ], 10, 2 );
-		add_action( 'admin_notices', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'stale_template_notice' ] );
-		add_action( 'admin_post_abet_trash_stale_template', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'trash_stale_template' ] );
-		add_action( 'admin_post_abet_trash_all_stale_templates', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'trash_all_stale_templates' ] );
-		add_filter( 'post_row_actions', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'remove_row_actions' ], 10, 2 );
-		add_action( 'admin_enqueue_scripts', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'enqueue_admin_assets' ] );
-		add_action( 'enqueue_block_assets', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'enqueue_block_editor_styles' ] );
-		add_action( 'admin_menu', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'admin_menu' ] );
-		add_filter( 'display_post_states', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'add_display_post_states' ], 10, 2 );
-		add_filter( 'allowed_block_types_all', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'inherit_allowed_block_types' ], PHP_INT_MAX, 2 );
-		add_filter( 'manage_block-templates_posts_columns', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'add_default_content_column' ] );
-		add_action( 'manage_block-templates_posts_custom_column', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'render_default_content_column' ], 10, 2 );
+		add_action( 'init', [ self::class, 'register_post_types' ] );
+		add_action( 'init', [ self::class, 'register_template_meta' ] );
+		add_action( 'init', [ self::class, 'create_post_type_posts' ], 100 );
+		add_action( 'init', [ self::class, 'register_block_templates' ], 999 );
+		add_filter( 'default_content', [ self::class, 'set_default_content' ], 10, 2 );
+		add_action( 'admin_notices', [ self::class, 'stale_template_notice' ] );
+		add_action( 'admin_post_abet_trash_stale_template', [ self::class, 'trash_stale_template' ] );
+		add_action( 'admin_post_abet_trash_all_stale_templates', [ self::class, 'trash_all_stale_templates' ] );
+		add_filter( 'post_row_actions', [ self::class, 'remove_row_actions' ], 10, 2 );
+		add_action( 'admin_enqueue_scripts', [ self::class, 'enqueue_admin_assets' ] );
+		add_action( 'enqueue_block_assets', [ self::class, 'enqueue_block_editor_styles' ] );
+		add_action( 'admin_menu', [ self::class, 'admin_menu' ] );
+		add_filter( 'display_post_states', [ self::class, 'add_display_post_states' ], 10, 2 );
+		add_filter( 'allowed_block_types_all', [ self::class, 'inherit_allowed_block_types' ], PHP_INT_MAX, 2 );
+		add_filter( 'manage_block-templates_posts_columns', [ self::class, 'add_default_content_column' ] );
+		add_action( 'manage_block-templates_posts_custom_column', [ self::class, 'render_default_content_column' ], 10, 2 );
 
 		if ( ! self::is_block_theme() ) {
-			add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'create_taxonomy_posts' ], 100 );
-			add_action( 'init', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'create_special_pages' ], 100 );
-			add_filter( 'archive_template', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'get_custom_archive' ] );
+			add_action( 'init', [ self::class, 'create_taxonomy_posts' ], 100 );
+			add_action( 'init', [ self::class, 'create_special_pages' ], 100 );
+			add_filter( 'archive_template', [ self::class, 'get_custom_archive' ] );
 
 			// Load the template for special pages (e.g. the 404 page).
-			add_filter( 'template_include', [ 'Acato\Block_Editor_Templates\Admin\Admin', 'set_special_template' ], 99 );
+			add_filter( 'template_include', [ self::class, 'set_special_template' ], 99 );
 		}
 	}
 
@@ -637,7 +637,7 @@ class Admin {
 				'<p>%1$s %2$s</p>',
 				esc_html(
 					sprintf(
-						/* translators: %s: template title. */
+					/* translators: %s: template title. */
 						__( 'The Post Type Template “%s” exists for a post type that no longer uses the block editor.', 'block-editor-templates' ),
 						self::stale_template_label( $post_id, $title )
 					)
@@ -1120,7 +1120,7 @@ class Admin {
 				 * @param string|array $capability_type The capability type as defined by WordPress, 'post' by default.
 				 *                                      Filter can return a string or a 2-element array.
 				 *                                      See function get_post_type_capabilities for extensive documentation.
-				 * @param string $post_type_slug The post type for which the capability is overridden.
+				 * @param string       $post_type_slug  The post type for which the capability is overridden.
 				 *
 				 * @see   get_post_type_capabilities
 				 */
@@ -1344,6 +1344,7 @@ class Admin {
 				if ( 'general_template' === $meta_value || empty( $meta_value ) ) {
 					return false;
 				}
+
 				return get_post_type_archive_link( $meta_value );
 
 			case 'tax-arch-templates':
@@ -1361,11 +1362,13 @@ class Admin {
 				if ( ! empty( $terms ) && ! is_wp_error( $terms ) ) {
 					return get_term_link( $terms[0] );
 				}
+
 				return false;
 
 			case 'special-templates':
 				$meta_value    = get_post_meta( $post->ID, '_template_for_special', true );
 				$special_pages = self::special_pages();
+
 				return $special_pages[ $meta_value ]['preview'] ?? false;
 
 			default:
