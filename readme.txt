@@ -1,10 +1,10 @@
 === Block Editor Templates ===
-Contributors: acato, rockfire
+Contributors: acato, rockfire, paulacato, rmpel, eyalacato
 Tags: block editor, gutenberg, block templates
 Requires at least: 5.0
 Tested up to: 7.0.1
 Requires PHP: 7.2
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl.html
 
@@ -58,11 +58,23 @@ You can read more about the distinction between these types of themes in [the Wo
 
 Give the block a `{base}Placeholder` attribute (e.g. `content` → `contentPlaceholder`) of the same type as the content attribute, and render it as the placeholder in the block's edit component. The plugin then automatically adds a "Use content as placeholder" toggle to that block; you do not add the `textAsPlaceholder` attribute yourself. See `docs/placeholder-support.md` for a full walkthrough.
 
+= I found a typo, or a translation that doesn't read well. What should I do? =
+
+Please tell us, we'd like to fix it. Small wording mistakes are easy to miss, especially in the translations, and we would much rather hear about them than leave them in. Open a topic on [the support forum](https://wordpress.org/support/plugin/block-editor-templates/) or an issue on [GitHub](https://github.com/acato-plugins/block-editor-templates/issues), and mention where you saw the text. If you can suggest a better phrasing, even better.
+
 = How can I report security bugs? =
 
 You can report security bugs through the Patchstack Vulnerability Disclosure Program. The Patchstack team helps validate, triage and handle any security vulnerabilities. [Report a security vulnerability.]( https://patchstack.com/database/vdp/398f3310-d285-4489-ae3b-07b8ab344119 )
 
 == Changelog ==
+
+= 1.1.1 =
+Release Date: July 28th, 2026
+
+Feature: Added Flemish (nl_BE), French (fr_FR) and German (de_DE) translations.
+Fix: The translations shipped with the plugin are now actually loaded. Without this, all PHP strings stayed in English even though a Dutch (nl_NL) translation was bundled in 1.1.0.
+Chore: Added the missing contributors to the plugin's contributor list.
+Chore: Completed the Dutch (nl_NL) translation, so it can be imported into translate.wordpress.org.
 
 = 1.1.0 =
 Release Date: July 14th, 2026

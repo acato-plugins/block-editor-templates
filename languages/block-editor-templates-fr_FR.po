@@ -1,191 +1,18 @@
+#
 msgid ""
 msgstr ""
 "Project-Id-Version: Block Editor Templates 1.1.1\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/block-editor-templates\n"
+"POT-Creation-Date: 2026-07-28T00:00:00+00:00\n"
+"PO-Revision-Date: 2026-07-28T00:00:00+00:00\n"
 "Last-Translator: Acato <support@acato.nl>\n"
-"Language-Team: Dutch <nl@li.org>\n"
+"Language-Team: French (France) <fr_FR@li.org>\n"
+"Language: fr_FR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-07-14T09:41:37+00:00\n"
-"PO-Revision-Date: 2026-07-14T09:41:37+00:00\n"
-"Language: nl_NL\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "X-Domain: block-editor-templates\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
-
-#. Description of the plugin
-#: block-editor-templates.php
-msgid "Templates for the WordPress Block Editor."
-msgstr "Sjablonen voor de WordPress blokeditor."
-
-#: src/admin/class-admin.php:111
-msgctxt "posttype single name global used"
-msgid "Post Type Template"
-msgstr "Berichttype-sjabloon"
-
-#: src/admin/class-admin.php:112
-msgctxt "posttype plural name global used"
-msgid "Post Type Templates"
-msgstr "Berichttype-sjablonen"
-
-#: src/admin/class-admin.php:113
-msgctxt "posttype description"
-msgid "Templates that are applied to each new post of the matching post type."
-msgstr "Sjablonen die worden toegepast op elk nieuw bericht van het bijbehorende berichttype."
-
-#: src/admin/class-admin.php:120
-msgctxt "posttype single name global used"
-msgid "Post Type Archive Template"
-msgstr "Berichttype-archiefsjabloon"
-
-#: src/admin/class-admin.php:121
-msgctxt "posttype plural name global used"
-msgid "Post Type Archive Templates"
-msgstr "Berichttype-archiefsjablonen"
-
-#: src/admin/class-admin.php:122
-msgctxt "posttype description"
-msgid "Templates that render the archive page of the matching post type."
-msgstr "Sjablonen die de archiefpagina van het bijbehorende berichttype weergeven."
-
-#: src/admin/class-admin.php:129
-msgctxt "posttype single name global used"
-msgid "Taxonomy Archive Template"
-msgstr "Taxonomie-archiefsjabloon"
-
-#: src/admin/class-admin.php:130
-msgctxt "posttype plural name global used"
-msgid "Taxonomy Archive Templates"
-msgstr "Taxonomie-archiefsjablonen"
-
-#: src/admin/class-admin.php:131
-msgctxt "posttype description"
-msgid "Templates that render the archive page of the matching taxonomy."
-msgstr "Sjablonen die de archiefpagina van de bijbehorende taxonomie weergeven."
-
-#: src/admin/class-admin.php:138
-msgctxt "posttype single name global used"
-msgid "Special Template"
-msgstr "Speciaal sjabloon"
-
-#: src/admin/class-admin.php:139
-msgctxt "posttype plural name global used"
-msgid "Special Templates"
-msgstr "Speciale sjablonen"
-
-#: src/admin/class-admin.php:140
-msgctxt "posttype description"
-msgid "Templates for special pages, such as the 404 page."
-msgstr "Sjablonen voor speciale pagina's, zoals de 404-pagina."
-
-#. translators: %d: number of templates moved to the trash.
-#: src/admin/class-admin.php:558
-#, php-format
-msgid "%d template moved to the trash."
-msgid_plural "%d templates moved to the trash."
-msgstr[0] "%d sjabloon naar de prullenbak verplaatst."
-msgstr[1] "%d sjablonen naar de prullenbak verplaatst."
-
-#: src/admin/class-admin.php:577
-msgid "These Post Type Templates exist for post types that no longer use the block editor. You can move them to the trash:"
-msgstr "Deze berichttype-sjablonen bestaan voor berichttypen die de blokeditor niet meer gebruiken. Je kunt ze naar de prullenbak verplaatsen:"
-
-#: src/admin/class-admin.php:590
-msgid "Move all to Trash"
-msgstr "Alles naar de prullenbak verplaatsen"
-
-#. translators: %s: template title.
-#: src/admin/class-admin.php:603
-#, php-format
-msgid "The Post Type Template “%s” exists for a post type that no longer uses the block editor."
-msgstr "Het berichttype-sjabloon “%s” bestaat voor een berichttype dat de blokeditor niet meer gebruikt."
-
-#. translators: %d: template post ID.
-#: src/admin/class-admin.php:625
-#, php-format
-msgid "Template #%d"
-msgstr "Sjabloon #%d"
-
-#: src/admin/class-admin.php:655
-msgid "Move to Trash"
-msgstr "Naar de prullenbak verplaatsen"
-
-#: src/admin/class-admin.php:669
-msgid "You are not allowed to trash this template."
-msgstr "Je hebt geen toestemming om dit sjabloon naar de prullenbak te verplaatsen."
-
-#: src/admin/class-admin.php:804
-#: src/admin/class-admin.php:883
-msgid "_General Template"
-msgstr "_Algemeen sjabloon"
-
-#: src/admin/class-admin.php:937
-msgid "404 page"
-msgstr "404-pagina"
-
-#: src/admin/class-admin.php:1008
-msgid "View"
-msgstr "Bekijken"
-
-#: src/admin/class-admin.php:1031
-msgid "Add New"
-msgstr "Nieuwe toevoegen"
-
-#. translators: %s: CPT name
-#: src/admin/class-admin.php:1033
-#, php-format
-msgid "Add New %s"
-msgstr "Nieuwe %s toevoegen"
-
-#. translators: %s: CPT name
-#: src/admin/class-admin.php:1035
-#, php-format
-msgid "Edit %s"
-msgstr "%s bewerken"
-
-#. translators: %s: CPT name
-#: src/admin/class-admin.php:1037
-#, php-format
-msgid "New %s"
-msgstr "Nieuwe %s"
-
-#. translators: %s: CPT name
-#: src/admin/class-admin.php:1039
-#, php-format
-msgid "All %s"
-msgstr "Alle %s"
-
-#. translators: %s: CPT name
-#: src/admin/class-admin.php:1041
-#, php-format
-msgid "View %s"
-msgstr "%s bekijken"
-
-#. translators: %s: CPT name
-#: src/admin/class-admin.php:1043
-#, php-format
-msgid "Search %s"
-msgstr "%s zoeken"
-
-#. translators: %s: CPT name
-#: src/admin/class-admin.php:1045
-#, php-format
-msgid "No %s found"
-msgstr "Geen %s gevonden"
-
-#. translators: %s: CPT name
-#: src/admin/class-admin.php:1047
-#, php-format
-msgid "No %s found in trash"
-msgstr "Geen %s gevonden in de prullenbak"
-
-#: src/admin/class-admin.php:1240
-msgid "Item is deleted"
-msgstr "Item is verwijderd"
-
-#: src/admin/assets/src/abet-filters.js:240
-msgid "Placeholder options"
-msgstr "Placeholder-opties"
 
 #. Plugin Name of the plugin
 #: block-editor-templates.php
@@ -198,76 +25,248 @@ msgstr "Block Editor Templates"
 msgid "https://www.acato.nl"
 msgstr "https://www.acato.nl"
 
+#. Description of the plugin
+#: block-editor-templates.php
+msgid "Templates for the WordPress Block Editor."
+msgstr "Modèles pour l’éditeur de blocs de WordPress."
+
 #. Author of the plugin
 #: block-editor-templates.php
 msgid "Acato"
 msgstr "Acato"
 
+#: src/admin/class-admin.php:111
+msgctxt "posttype single name global used"
+msgid "Post Type Template"
+msgstr "Modèle de type de publication"
+
+#: src/admin/class-admin.php:112
+msgctxt "posttype plural name global used"
+msgid "Post Type Templates"
+msgstr "Modèles de type de publication"
+
+#: src/admin/class-admin.php:113
+msgctxt "posttype description"
+msgid "Templates that are applied to each new post of the matching post type."
+msgstr "Modèles appliqués à chaque nouvelle publication du type de publication correspondant."
+
+#: src/admin/class-admin.php:120
+msgctxt "posttype single name global used"
+msgid "Post Type Archive Template"
+msgstr "Modèle d’archive de type de publication"
+
+#: src/admin/class-admin.php:121
+msgctxt "posttype plural name global used"
+msgid "Post Type Archive Templates"
+msgstr "Modèles d’archive de type de publication"
+
+#: src/admin/class-admin.php:122
+msgctxt "posttype description"
+msgid "Templates that render the archive page of the matching post type."
+msgstr "Modèles qui affichent la page d’archive du type de publication correspondant."
+
+#: src/admin/class-admin.php:129
+msgctxt "posttype single name global used"
+msgid "Taxonomy Archive Template"
+msgstr "Modèle d’archive de taxonomie"
+
+#: src/admin/class-admin.php:130
+msgctxt "posttype plural name global used"
+msgid "Taxonomy Archive Templates"
+msgstr "Modèles d’archive de taxonomie"
+
+#: src/admin/class-admin.php:131
+msgctxt "posttype description"
+msgid "Templates that render the archive page of the matching taxonomy."
+msgstr "Modèles qui affichent la page d’archive de la taxonomie correspondante."
+
+#: src/admin/class-admin.php:138
+msgctxt "posttype single name global used"
+msgid "Special Template"
+msgstr "Modèle spécial"
+
+#: src/admin/class-admin.php:139
+msgctxt "posttype plural name global used"
+msgid "Special Templates"
+msgstr "Modèles spéciaux"
+
+#: src/admin/class-admin.php:140
+msgctxt "posttype description"
+msgid "Templates for special pages, such as the 404 page."
+msgstr "Modèles pour les pages spéciales, comme la page 404."
+
+#. translators: %d: number of templates moved to the trash.
+#: src/admin/class-admin.php:558
+#, php-format
+msgid "%d template moved to the trash."
+msgid_plural "%d templates moved to the trash."
+msgstr[0] "%d modèle déplacé dans la corbeille."
+msgstr[1] "%d modèles déplacés dans la corbeille."
+
+#: src/admin/class-admin.php:577
+msgid "These Post Type Templates exist for post types that no longer use the block editor. You can move them to the trash:"
+msgstr "Ces modèles de type de publication existent pour des types de publication qui n’utilisent plus l’éditeur de blocs. Vous pouvez les déplacer dans la corbeille :"
+
+#: src/admin/class-admin.php:590
+msgid "Move all to Trash"
+msgstr "Tout déplacer dans la corbeille"
+
+#. translators: %s: template title.
+#: src/admin/class-admin.php:603
+#, php-format
+msgid "The Post Type Template “%s” exists for a post type that no longer uses the block editor."
+msgstr "Le modèle de type de publication « %s » existe pour un type de publication qui n’utilise plus l’éditeur de blocs."
+
+#. translators: %d: template post ID.
+#: src/admin/class-admin.php:625
+#, php-format
+msgid "Template #%d"
+msgstr "Modèle n° %d"
+
+#: src/admin/class-admin.php:655
+msgid "Move to Trash"
+msgstr "Déplacer dans la corbeille"
+
+#: src/admin/class-admin.php:669
+msgid "You are not allowed to trash this template."
+msgstr "Vous n’êtes pas autorisé à déplacer ce modèle dans la corbeille."
+
+#: src/admin/class-admin.php:804 src/admin/class-admin.php:883
+msgid "_General Template"
+msgstr "_Modèle général"
+
+#: src/admin/class-admin.php:937
+msgid "404 page"
+msgstr "Page 404"
+
+#: src/admin/class-admin.php:1008
+msgid "View"
+msgstr "Voir"
+
+#: src/admin/class-admin.php:1031
+msgid "Add New"
+msgstr "Ajouter"
+
+#. translators: %s: CPT name
+#: src/admin/class-admin.php:1033
+#, php-format
+msgid "Add New %s"
+msgstr "Ajouter %s"
+
+#. translators: %s: CPT name
+#: src/admin/class-admin.php:1035
+#, php-format
+msgid "Edit %s"
+msgstr "Modifier %s"
+
+#. translators: %s: CPT name
+#: src/admin/class-admin.php:1037
+#, php-format
+msgid "New %s"
+msgstr "Nouveau %s"
+
+#. translators: %s: CPT name
+#: src/admin/class-admin.php:1039
+#, php-format
+msgid "All %s"
+msgstr "Tous les %s"
+
+#. translators: %s: CPT name
+#: src/admin/class-admin.php:1041
+#, php-format
+msgid "View %s"
+msgstr "Voir %s"
+
+#. translators: %s: CPT name
+#: src/admin/class-admin.php:1043
+#, php-format
+msgid "Search %s"
+msgstr "Rechercher %s"
+
+#. translators: %s: CPT name
+#: src/admin/class-admin.php:1045
+#, php-format
+msgid "No %s found"
+msgstr "Aucun %s trouvé"
+
+#. translators: %s: CPT name
+#: src/admin/class-admin.php:1047
+#, php-format
+msgid "No %s found in trash"
+msgstr "Aucun %s trouvé dans la corbeille"
+
+#: src/admin/class-admin.php:1240
+msgid "Item is deleted"
+msgstr "L’élément est supprimé"
+
+#: src/admin/class-admin.php:1257 src/admin/assets/src/default-content-panel.js:50
+msgid "When enabled, new posts of this post type start with this template’s blocks and the content entered in them. When disabled, new posts get only the empty block structure. Only applies when creating a post in the WordPress admin."
+msgstr "Lorsque cette option est activée, les nouvelles publications de ce type de publication démarrent avec les blocs de ce modèle et le contenu qui y a été saisi. Lorsqu’elle est désactivée, les nouvelles publications ne reçoivent que la structure de blocs vide. Ne s’applique qu’à la création d’une publication dans l’administration de WordPress."
+
 #: src/admin/class-admin.php:1263
 msgid "Prefill new posts"
-msgstr "Nieuwe berichten voorinvullen"
+msgstr "Préremplir les nouvelles publications"
 
 #: src/admin/class-admin.php:1289
 msgid "Prefill enabled"
-msgstr "Voorinvullen ingeschakeld"
+msgstr "Préremplissage activé"
 
 #: src/admin/class-admin.php:1291
 msgid "Prefill disabled"
-msgstr "Voorinvullen uitgeschakeld"
+msgstr "Préremplissage désactivé"
+
+#: src/admin/assets/src/abet-filters.js:240
+msgid "Placeholder options"
+msgstr "Options d’espace réservé"
 
 #. translators: 1: placeholder attribute name, 2: expected base attribute name.
 #: src/admin/assets/src/abet-filters.js:257
 #, js-format
 msgid "“%1$s” is set, but its matching attribute “%2$s” does not exist on this block, so it cannot be used as a placeholder."
-msgstr "“%1$s” is ingesteld, maar het bijbehorende attribuut “%2$s” bestaat niet op dit blok, dus het kan niet als placeholder worden gebruikt."
+msgstr "« %1$s » est défini, mais son attribut correspondant « %2$s » n’existe pas sur ce bloc ; il ne peut donc pas servir d’espace réservé."
 
 #. translators: 1: suggested placeholder attribute name (e.g. "contentPlaceholder"), 2: existing base attribute name (e.g. "content").
 #: src/admin/assets/src/abet-filters.js:267
 #, js-format
 msgid "Did you mean “%1$s”? This block has a matching “%2$s” attribute."
-msgstr "Bedoelde je “%1$s”? Dit blok heeft een bijbehorend attribuut “%2$s”."
+msgstr "Vouliez-vous dire « %1$s » ? Ce bloc possède un attribut « %2$s » correspondant."
 
 #. translators: %s: comma-separated list of suggested placeholder attribute names.
 #: src/admin/assets/src/abet-filters.js:278
 #, js-format
 msgid "Did you perhaps mean one of: %s?"
-msgstr "Bedoelde je misschien een van: %s?"
+msgstr "Vouliez-vous peut-être dire l’un de ces éléments : %s ?"
 
 #. translators: 1: placeholder attribute name, 2: placeholder data-type, 3: base attribute name, 4: base data-type.
 #: src/admin/assets/src/abet-filters.js:305
 #, js-format
 msgid "Type mismatch: “%1$s” (%2$s) must be the same data-type as “%3$s” (%4$s)."
-msgstr "Type komt niet overeen: “%1$s” (%2$s) moet hetzelfde datatype zijn als “%3$s” (%4$s)."
+msgstr "Type incompatible : « %1$s » (%2$s) doit être du même type de données que « %3$s » (%4$s)."
 
 #: src/admin/assets/src/abet-filters.js:325
 msgid "Use content as placeholder"
-msgstr "Inhoud als placeholder gebruiken"
+msgstr "Utiliser le contenu comme espace réservé"
 
 #: src/admin/assets/src/abet-filters.js:331
 msgid "Inherited from a parent block: this block’s content is already used as placeholder text."
-msgstr "Overgenomen van een bovenliggend blok: de inhoud van dit blok wordt al als placeholdertekst gebruikt."
-
-#: src/admin/assets/src/abet-filters.js:347
-msgid "This block has no valid placeholder attributes to toggle."
-msgstr "Dit blok heeft geen geldige placeholder-attributen om te wisselen."
-
-#: src/admin/assets/src/abet-filters.js:410
-msgid "Used as placeholder"
-msgstr "Gebruikt als placeholder"
-
-#: src/admin/assets/src/default-content-panel.js:43
-msgid "Post Type Template"
-msgstr "Berichttype-sjabloon"
-
-#: src/admin/assets/src/default-content-panel.js:46
-msgid "Prefill new posts with this template"
-msgstr "Nieuwe berichten voorinvullen met dit sjabloon"
-
-#: src/admin/class-admin.php:1257
-#: src/admin/assets/src/default-content-panel.js:50
-msgid "When enabled, new posts of this post type start with this template’s blocks and the content entered in them. When disabled, new posts get only the empty block structure. Only applies when creating a post in the WordPress admin."
-msgstr "Wanneer ingeschakeld, beginnen nieuwe berichten van dit berichttype met de blokken van dit sjabloon én de inhoud die je erin hebt gezet. Wanneer uitgeschakeld, krijgen nieuwe berichten alleen de lege blokstructuur. Alleen van toepassing bij het aanmaken van een bericht in het WordPress-beheer."
+msgstr "Hérité d’un bloc parent : le contenu de ce bloc est déjà utilisé comme texte d’espace réservé."
 
 #: src/admin/assets/src/abet-filters.js:335
 msgid "When on, the text you typed is moved into this block’s placeholder attribute and shown as a greyed-out hint. New posts created from this template start with that hint instead of real content. Turn it off to move the text back."
-msgstr "Wanneer ingeschakeld, wordt de tekst die je hebt getypt naar het placeholder-attribuut van dit blok verplaatst en als grijze hint getoond. Nieuwe berichten die met dit sjabloon worden aangemaakt, beginnen met die hint in plaats van echte inhoud. Schakel het uit om de tekst terug te verplaatsen."
+msgstr "Lorsque cette option est activée, le texte que vous avez saisi est déplacé dans l’attribut d’espace réservé de ce bloc et affiché comme une indication grisée. Les nouvelles publications créées à partir de ce modèle démarrent avec cette indication au lieu du contenu réel. Désactivez l’option pour remettre le texte en place."
+
+#: src/admin/assets/src/abet-filters.js:347
+msgid "This block has no valid placeholder attributes to toggle."
+msgstr "Ce bloc n’a aucun attribut d’espace réservé valide à activer."
+
+#: src/admin/assets/src/abet-filters.js:410
+msgid "Used as placeholder"
+msgstr "Utilisé comme espace réservé"
+
+#: src/admin/assets/src/default-content-panel.js:43
+msgid "Post Type Template"
+msgstr "Modèle de type de publication"
+
+#: src/admin/assets/src/default-content-panel.js:46
+msgid "Prefill new posts with this template"
+msgstr "Préremplir les nouvelles publications avec ce modèle"
