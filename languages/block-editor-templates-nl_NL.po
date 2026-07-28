@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Block Editor Templates 1.0.7\n"
+"Project-Id-Version: Block Editor Templates 1.1.1\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/block-editor-templates\n"
 "Last-Translator: Acato <support@acato.nl>\n"
 "Language-Team: Dutch <nl@li.org>\n"
@@ -190,18 +190,18 @@ msgstr "Placeholder-opties"
 #. Plugin Name of the plugin
 #: block-editor-templates.php
 msgid "Block Editor Templates"
-msgstr ""
+msgstr "Block Editor Templates"
 
 #. Plugin URI of the plugin
 #. Author URI of the plugin
 #: block-editor-templates.php
 msgid "https://www.acato.nl"
-msgstr ""
+msgstr "https://www.acato.nl"
 
 #. Author of the plugin
 #: block-editor-templates.php
 msgid "Acato"
-msgstr ""
+msgstr "Acato"
 
 #: src/admin/class-admin.php:1263
 msgid "Prefill new posts"
