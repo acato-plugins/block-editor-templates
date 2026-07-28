@@ -58,6 +58,10 @@ You can read more about the distinction between these types of themes in [the Wo
 
 Give the block a `{base}Placeholder` attribute (e.g. `content` → `contentPlaceholder`) of the same type as the content attribute, and render it as the placeholder in the block's edit component. The plugin then automatically adds a "Use content as placeholder" toggle to that block; you do not add the `textAsPlaceholder` attribute yourself. See `docs/placeholder-support.md` for a full walkthrough.
 
+= I found a typo, or a translation that doesn't read well. What should I do? =
+
+Please tell us, we'd like to fix it. Small wording mistakes are easy to miss, especially in the translations, and we would much rather hear about them than leave them in. Open a topic on [the support forum](https://wordpress.org/support/plugin/block-editor-templates/) or an issue on [GitHub](https://github.com/acato-plugins/block-editor-templates/issues), and mention where you saw the text. If you can suggest a better phrasing, even better.
+
 = How can I report security bugs? =
 
 You can report security bugs through the Patchstack Vulnerability Disclosure Program. The Patchstack team helps validate, triage and handle any security vulnerabilities. [Report a security vulnerability.]( https://patchstack.com/database/vdp/398f3310-d285-4489-ae3b-07b8ab344119 )
