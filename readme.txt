@@ -67,6 +67,7 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 = 1.1.1 =
 Release Date: July 28th, 2026
 
+Feature: Added Flemish (nl_BE), French (fr_FR) and German (de_DE) translations.
 Fix: The translations shipped with the plugin are now actually loaded. Without this, all PHP strings stayed in English even though a Dutch (nl_NL) translation was bundled in 1.1.0.
 Chore: Added the missing contributors to the plugin's contributor list.
 Chore: Completed the Dutch (nl_NL) translation, so it can be imported into translate.wordpress.org.
