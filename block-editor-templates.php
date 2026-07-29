@@ -8,7 +8,7 @@
  * Plugin Name:       Block Editor Templates
  * Plugin URI:        https://www.acato.nl
  * Description:       Templates for the WordPress Block Editor.
- * Version:           1.1.1
+ * Version:           1.1.2
  * Requires at least: 5.0
  * Requires PHP:      7.2
  * Author:            Acato
@@ -24,7 +24,7 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-define( 'ABET_VERSION', '1.1.1' );
+define( 'ABET_VERSION', '1.1.2' );
 
 require_once plugin_dir_path( __FILE__ ) . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'class-autoloader.php';
 spl_autoload_register( [ '\Acato\Block_Editor_Templates\Autoloader', 'autoload' ] );
