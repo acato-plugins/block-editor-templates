@@ -445,8 +445,8 @@ class Admin {
 			false
 		);
 
-		// Load the editor UI's JavaScript translations (generated with `wp i18n make-json`).
-		wp_set_script_translations( 'block-editor-templates-admin', 'block-editor-templates', ABET_ABSPATH . 'languages' );
+		// Load the editor UI's JavaScript translations from the WordPress.org language pack.
+		wp_set_script_translations( 'block-editor-templates-admin', 'block-editor-templates' );
 	}
 
 	/**

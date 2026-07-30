@@ -4,7 +4,7 @@ Tags: block editor, gutenberg, block templates
 Requires at least: 5.0
 Tested up to: 7.0.1
 Requires PHP: 7.2
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl.html
 
@@ -60,13 +60,19 @@ Give the block a `{base}Placeholder` attribute (e.g. `content` → `contentPlace
 
 = I found a typo, or a translation that doesn't read well. What should I do? =
 
-Please tell us, we'd like to fix it. Small wording mistakes are easy to miss, especially in the translations, and we would much rather hear about them than leave them in. Open a topic on [the support forum](https://wordpress.org/support/plugin/block-editor-templates/) or an issue on [GitHub](https://github.com/acato-plugins/block-editor-templates/issues), and mention where you saw the text. If you can suggest a better phrasing, even better.
+Please tell us, we'd like to fix it. Small wording mistakes are easy to miss, and we would much rather hear about them than leave them in. For the English source text, open a topic on [the support forum](https://wordpress.org/support/plugin/block-editor-templates/) or an issue on [GitHub](https://github.com/acato-plugins/block-editor-templates/issues), and mention where you saw the text. Translations are maintained by the WordPress polyglots teams on [translate.wordpress.org](https://translate.wordpress.org/projects/wp-plugins/block-editor-templates/), where you can suggest a better phrasing in your own language directly.
 
 = How can I report security bugs? =
 
 You can report security bugs through the Patchstack Vulnerability Disclosure Program. The Patchstack team helps validate, triage and handle any security vulnerabilities. [Report a security vulnerability.]( https://patchstack.com/database/vdp/398f3310-d285-4489-ae3b-07b8ab344119 )
 
 == Changelog ==
+
+= 1.1.2 =
+Release Date: July 29th, 2026
+
+Chore: Translations are no longer bundled with the plugin. They are now maintained on [translate.wordpress.org](https://translate.wordpress.org/projects/wp-plugins/block-editor-templates/), where WordPress picks them up as language packs automatically.
+Chore: Removed the call to load_plugin_textdomain(). Since WordPress 4.6 plugins hosted on WordPress.org no longer need it; WordPress loads the translations when they are needed.
 
 = 1.1.1 =
 Release Date: July 28th, 2026
