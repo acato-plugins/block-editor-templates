@@ -400,10 +400,23 @@ class Admin {
 			if ( ! empty( $block['attrs']['textAsPlaceholder'] ) ) {
 				$attributes = self::$registered_blocks[ $block['blockName'] ]->get_attributes();
 				foreach ( $attributes as $attribute_name => $attribute ) {
-					if ( isset( $attributes[ $attribute_name . 'Placeholder' ], $block['attrs'][ $attribute_name ] ) ) {
-						$block['attrs'][ $attribute_name . 'Placeholder' ] = $block['attrs'][ $attribute_name ];
-						unset( $block['attrs'][ $attribute_name ] );
+					$placeholder_name = $attribute_name . 'Placeholder';
+
+					if ( ! isset( $attributes[ $placeholder_name ] ) ) {
+						continue;
 					}
+
+					if ( isset( $block['attrs'][ $attribute_name ] ) ) {
+						$block['attrs'][ $placeholder_name ] = $block['attrs'][ $attribute_name ];
+						unset( $block['attrs'][ $attribute_name ] );
+						continue;
+					}
+
+					// Markup-sourced content (source: html / rich-text) is no attribute, so the editor
+					// mirrors it into its "...Placeholder" counterpart instead. Should a template have
+					// been saved before the editor could empty the block itself, the same text is still
+					// in the markup and would be copied as real content, so remove it here as well.
+					$block = self::strip_placeholder_from_markup( $block, $block['attrs'][ $placeholder_name ] ?? '' );
 				}
 			}
 
@@ -413,6 +426,59 @@ class Admin {
 		}
 
 		return $blocks;
+	}
+
+	/**
+	 * Remove placeholder text from a block's own markup.
+	 *
+	 * Only an element's complete text content is removed (">text<" becomes "><"), so a placeholder that
+	 * happens to be a substring of the block's content leaves the markup untouched.
+	 *
+	 * @param array<mixed> $block The block as provided by parse_blocks().
+	 * @param mixed        $text  The placeholder text to remove.
+	 *
+	 * @return array<mixed> The block with the placeholder text removed from its markup.
+	 */
+	private static function strip_placeholder_from_markup( $block, $text ) {
+		if ( ! is_string( $text ) || '' === $text ) {
+			return $block;
+		}
+
+		$needle      = '>' . $text . '<';
+		$replacement = '><';
+
+		if ( isset( $block['innerHTML'] ) && is_string( $block['innerHTML'] ) ) {
+			$block['innerHTML'] = self::replace_first( $block['innerHTML'], $needle, $replacement );
+		}
+
+		if ( ! empty( $block['innerContent'] ) && is_array( $block['innerContent'] ) ) {
+			foreach ( $block['innerContent'] as $index => $chunk ) {
+				if ( is_string( $chunk ) ) {
+					$block['innerContent'][ $index ] = self::replace_first( $chunk, $needle, $replacement );
+				}
+			}
+		}
+
+		return $block;
+	}
+
+	/**
+	 * Replace the first occurrence of a substring.
+	 *
+	 * @param string $haystack    The string to search in.
+	 * @param string $needle      The substring to replace.
+	 * @param string $replacement The replacement.
+	 *
+	 * @return string The resulting string, unchanged when the needle does not occur.
+	 */
+	private static function replace_first( $haystack, $needle, $replacement ) {
+		$position = strpos( $haystack, $needle );
+
+		if ( false === $position ) {
+			return $haystack;
+		}
+
+		return substr_replace( $haystack, $replacement, $position, strlen( $needle ) );
 	}
 
 	/**
