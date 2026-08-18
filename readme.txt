@@ -4,7 +4,7 @@ Tags: block editor, gutenberg, block templates
 Requires at least: 5.0
 Tested up to: 7.0.1
 Requires PHP: 7.2
-Stable tag: 1.1.2
+Stable tag: 1.1.3
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl.html
 
@@ -67,6 +67,11 @@ Please tell us, we'd like to fix it. Small wording mistakes are easy to miss, an
 You can report security bugs through the Patchstack Vulnerability Disclosure Program. The Patchstack team helps validate, triage and handle any security vulnerabilities. [Report a security vulnerability.]( https://patchstack.com/database/vdp/398f3310-d285-4489-ae3b-07b8ab344119 )
 
 == Changelog ==
+
+= 1.1.3 =
+Release Date: August 17th, 2026
+
+Fix: Text typed into a block *after* "Use content as placeholder" was switched on is now stored as placeholder text in full. Only the first character used to be moved into the placeholder attribute, while the rest stayed behind as real content — so a template prefilled new posts with that content instead of showing the hint. Templates in that state are repaired when they are opened.
 
 = 1.1.2 =
 Release Date: July 29th, 2026

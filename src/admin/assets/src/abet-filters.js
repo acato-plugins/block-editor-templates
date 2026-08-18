@@ -183,7 +183,7 @@ const addControlAttribute = (settings) => {
  */
 const withPlaceholderControls = createHigherOrderComponent(
 	(BlockEdit) => (props) => {
-		const { name, clientId, attributes, setAttributes } = props;
+		const { name, clientId, attributes, setAttributes, isSelected } = props;
 
 		const { schemaAttributes, ancestorEnabled } = useSelect(
 			(select) => {
@@ -214,8 +214,12 @@ const withPlaceholderControls = createHigherOrderComponent(
 			return <BlockEdit {...props} />;
 		}
 
-		const validPairs = placeholders.filter(
-			(placeholder) => placeholder.status === 'ok'
+		const validPairs = useMemo(
+			() =>
+				placeholders.filter(
+					(placeholder) => placeholder.status === 'ok'
+				),
+			[placeholders]
 		);
 		const isOwnEnabled = !!attributes[CONTROL_ATTRIBUTE];
 
@@ -241,10 +245,21 @@ const withPlaceholderControls = createHigherOrderComponent(
 			setAttributes(updates);
 		}, [isOwnEnabled, validPairs, attributes, setAttributes]);
 
-		// One-time normalisation for templates authored before the toggle moved content on the fly:
-		// a block already flagged as placeholder whose value still sits in the base attribute (with an
-		// empty placeholder) has that value moved across on load. The empty-placeholder guard makes this
-		// idempotent — once the value has moved it never fires again, so typing later is left untouched.
+		// Keep the pairs in step while the toggle is on, in two steps, so text typed *after* the toggle
+		// was switched on also ends up as placeholder text:
+		//
+		//  1. While the block is selected the base attribute is only *copied* into its placeholder
+		//     counterpart, never cleared. Clearing it on every keystroke would fight the rich-text
+		//     field the author is typing in — it keeps its own in-progress value, so the base attribute
+		//     would run ahead while the placeholder kept the single character that happened to trigger
+		//     the first move.
+		//  2. Once the block is no longer selected the base attribute is cleared, so the text turns
+		//     into the greyed-out hint and the template is stored the way it is documented: content in
+		//     `{base}Placeholder`, an empty base attribute.
+		//
+		// Because step 2 also runs on load, this doubles as the normalisation of templates authored
+		// before the toggle moved content at all (their text still sits in the base attribute), and it
+		// repairs templates where the two values drifted apart.
 		useEffect(() => {
 			if (!isOwnEnabled) {
 				return;
@@ -252,11 +267,15 @@ const withPlaceholderControls = createHigherOrderComponent(
 
 			const updates = {};
 			validPairs.forEach(({ baseKey, placeholderKey }) => {
-				if (
-					hasValue(attributes[baseKey]) &&
-					!hasValue(attributes[placeholderKey])
-				) {
+				if (!hasValue(attributes[baseKey])) {
+					return;
+				}
+
+				if (attributes[placeholderKey] !== attributes[baseKey]) {
 					updates[placeholderKey] = attributes[baseKey];
+				}
+
+				if (!isSelected) {
 					updates[baseKey] = '';
 				}
 			});
@@ -264,7 +283,7 @@ const withPlaceholderControls = createHigherOrderComponent(
 			if (Object.keys(updates).length) {
 				setAttributes(updates);
 			}
-		}, [isOwnEnabled, validPairs, attributes, setAttributes]);
+		}, [isOwnEnabled, isSelected, validPairs, attributes, setAttributes]);
 
 		return (
 			<Fragment>

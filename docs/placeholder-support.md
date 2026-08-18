@@ -115,9 +115,16 @@ so `contentPlaceholder` is already set and your block renders it as its hint —
 
 ## Notes
 
-- The move happens in the editor, on toggle. Blocks that were flagged before a
-  plugin version that moved content on toggle keep their text in the base
-  attribute until the toggle is switched off and on again.
+- The move happens in the editor: on toggle, and — for text typed while the
+  toggle is already on — as soon as the block is deselected. While the block is
+  selected the typed text is only *copied* into the placeholder attribute, so
+  the field the author is typing in is never emptied underneath them.
+- Because that same step also runs when a template is opened, a block whose text
+  still sits in the base attribute (authored before this behaviour existed, or
+  saved with the block still selected) is normalised on load, which marks the
+  template as having unsaved changes.
 - Content sourced from block markup (`source: "html"` / `"rich-text"`) is
   handled: the move is done in the editor where the value is available, not in
-  PHP where markup-sourced content is not a plain attribute.
+  PHP where markup-sourced content is not a plain attribute. As a safety net,
+  prefilling a new post also removes text from a block's markup when that exact
+  text is already stored in its `{base}Placeholder` attribute.
