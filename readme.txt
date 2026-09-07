@@ -4,7 +4,7 @@ Tags: block editor, gutenberg, block templates
 Requires at least: 5.0
 Tested up to: 7.0.1
 Requires PHP: 7.2
-Stable tag: 1.1.3
+Stable tag: 1.1.4
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl.html
 
@@ -67,6 +67,11 @@ Please tell us, we'd like to fix it. Small wording mistakes are easy to miss, an
 You can report security bugs through the Patchstack Vulnerability Disclosure Program. The Patchstack team helps validate, triage and handle any security vulnerabilities. [Report a security vulnerability.]( https://patchstack.com/database/vdp/398f3310-d285-4489-ae3b-07b8ab344119 )
 
 == Changelog ==
+
+= 1.1.4 =
+Release Date: September 7th, 2026
+
+Fix: The plugin no longer asks whether the active theme is a block theme before WordPress has registered the theme directory. WordPress 6.8 and newer reported that as a "called incorrectly" notice on every request, and the answer it was given could not be relied on: on a classic theme the archive and special-page templates were at risk of not being registered at all.
 
 = 1.1.3 =
 Release Date: August 17th, 2026

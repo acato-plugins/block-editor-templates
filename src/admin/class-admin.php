@@ -72,14 +72,34 @@ class Admin {
 		add_filter( 'manage_block-templates_posts_columns', [ self::class, 'add_default_content_column' ] );
 		add_action( 'manage_block-templates_posts_custom_column', [ self::class, 'render_default_content_column' ], 10, 2 );
 
-		if ( ! self::is_block_theme() ) {
-			add_action( 'init', [ self::class, 'create_taxonomy_posts' ], 100 );
-			add_action( 'init', [ self::class, 'create_special_pages' ], 100 );
-			add_filter( 'archive_template', [ self::class, 'get_custom_archive' ] );
+		add_action( 'after_setup_theme', [ self::class, 'register_classic_theme_hooks' ] );
+	}
 
-			// Load the template for special pages (e.g. the 404 page).
-			add_filter( 'template_include', [ self::class, 'set_special_template' ], 99 );
+	/**
+	 * The archives and special pages a block theme provides for itself.
+	 *
+	 * Registered from a hook rather than from the constructor, because the constructor runs while
+	 * WordPress is still including plugins and the theme it would have to ask about is not registered
+	 * yet. WordPress 6.8 says so out loud, and the answer was never dependable before it did.
+	 *
+	 * after_setup_theme is the first moment the theme is known, and it is still early: everything below
+	 * runs on init or later.
+	 *
+	 * @since 1.1.4
+	 *
+	 * @return void
+	 */
+	public static function register_classic_theme_hooks() {
+		if ( self::is_block_theme() ) {
+			return;
 		}
+
+		add_action( 'init', [ self::class, 'create_taxonomy_posts' ], 100 );
+		add_action( 'init', [ self::class, 'create_special_pages' ], 100 );
+		add_filter( 'archive_template', [ self::class, 'get_custom_archive' ] );
+
+		// Load the template for special pages (e.g. the 404 page).
+		add_filter( 'template_include', [ self::class, 'set_special_template' ], 99 );
 	}
 
 	/**
@@ -88,6 +108,9 @@ class Admin {
 	 * Guards wp_is_block_theme(), which only exists since WordPress 5.9, so the plugin keeps working on
 	 * the WordPress 5.0 minimum it declares support for: without the function the site cannot be a block
 	 * theme, so treating it as classic is the correct fallback.
+	 *
+	 * Do not call this before after_setup_theme: until the theme directory is registered there is no
+	 * theme to answer for.
 	 *
 	 * @return bool True when the active theme is a block theme.
 	 */
