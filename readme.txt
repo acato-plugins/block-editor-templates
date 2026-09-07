@@ -2,7 +2,7 @@
 Contributors: acato, rockfire, paulacato, rmpel, eyalacato
 Tags: block editor, gutenberg, block templates
 Requires at least: 5.0
-Tested up to: 7.0.1
+Tested up to: 7.1
 Requires PHP: 7.2
 Stable tag: 1.1.4
 License: GPLv3
