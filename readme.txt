@@ -71,7 +71,7 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 = 1.1.4 =
 Release Date: September 7th, 2026
 
-Fix: The plugin no longer asks whether the active theme is a block theme before WordPress has registered the theme directory. WordPress 6.8 and newer reported that as a "called incorrectly" notice on every request, and the answer it was given could not be relied on: on a classic theme the archive and special-page templates were at risk of not being registered at all.
+Fix: The plugin no longer asks whether the active theme is a block theme before WordPress has registered the theme directory. Asked that early the answer is always "not a block theme", so on a block theme the archive and special-page templates were registered even though a block theme provides those itself. WordPress 6.8 and newer also reported the premature question as a "called incorrectly" notice on every request.
 
 = 1.1.3 =
 Release Date: August 17th, 2026

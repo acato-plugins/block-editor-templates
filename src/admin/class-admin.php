@@ -76,11 +76,15 @@ class Admin {
 	}
 
 	/**
-	 * The archives and special pages a block theme provides for itself.
+	 * Register the hooks that only apply to classic themes.
+	 *
+	 * Archives and special pages are something a block theme provides for itself, so the plugin should
+	 * stay out of them there.
 	 *
 	 * Registered from a hook rather than from the constructor, because the constructor runs while
 	 * WordPress is still including plugins and the theme it would have to ask about is not registered
-	 * yet. WordPress 6.8 says so out loud, and the answer was never dependable before it did.
+	 * yet. Asked that early, WordPress always answers "not a block theme" (and since 6.8 it says out
+	 * loud that it was asked too early), so these hooks used to be registered on block themes as well.
 	 *
 	 * after_setup_theme is the first moment the theme is known, and it is still early: everything below
 	 * runs on init or later.
