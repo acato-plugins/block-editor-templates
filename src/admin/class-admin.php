@@ -72,14 +72,38 @@ class Admin {
 		add_filter( 'manage_block-templates_posts_columns', [ self::class, 'add_default_content_column' ] );
 		add_action( 'manage_block-templates_posts_custom_column', [ self::class, 'render_default_content_column' ], 10, 2 );
 
-		if ( ! self::is_block_theme() ) {
-			add_action( 'init', [ self::class, 'create_taxonomy_posts' ], 100 );
-			add_action( 'init', [ self::class, 'create_special_pages' ], 100 );
-			add_filter( 'archive_template', [ self::class, 'get_custom_archive' ] );
+		add_action( 'after_setup_theme', [ self::class, 'register_classic_theme_hooks' ] );
+	}
 
-			// Load the template for special pages (e.g. the 404 page).
-			add_filter( 'template_include', [ self::class, 'set_special_template' ], 99 );
+	/**
+	 * Register the hooks that only apply to classic themes.
+	 *
+	 * Archives and special pages are something a block theme provides for itself, so the plugin should
+	 * stay out of them there.
+	 *
+	 * Registered from a hook rather than from the constructor, because the constructor runs while
+	 * WordPress is still including plugins and the theme it would have to ask about is not registered
+	 * yet. Asked that early, WordPress always answers "not a block theme" (and since 6.8 it says out
+	 * loud that it was asked too early), so these hooks used to be registered on block themes as well.
+	 *
+	 * after_setup_theme is the first moment the theme is known, and it is still early: everything below
+	 * runs on init or later.
+	 *
+	 * @since 1.1.4
+	 *
+	 * @return void
+	 */
+	public static function register_classic_theme_hooks() {
+		if ( self::is_block_theme() ) {
+			return;
 		}
+
+		add_action( 'init', [ self::class, 'create_taxonomy_posts' ], 100 );
+		add_action( 'init', [ self::class, 'create_special_pages' ], 100 );
+		add_filter( 'archive_template', [ self::class, 'get_custom_archive' ] );
+
+		// Load the template for special pages (e.g. the 404 page).
+		add_filter( 'template_include', [ self::class, 'set_special_template' ], 99 );
 	}
 
 	/**
@@ -88,6 +112,9 @@ class Admin {
 	 * Guards wp_is_block_theme(), which only exists since WordPress 5.9, so the plugin keeps working on
 	 * the WordPress 5.0 minimum it declares support for: without the function the site cannot be a block
 	 * theme, so treating it as classic is the correct fallback.
+	 *
+	 * Do not call this before after_setup_theme: until the theme directory is registered there is no
+	 * theme to answer for.
 	 *
 	 * @return bool True when the active theme is a block theme.
 	 */
