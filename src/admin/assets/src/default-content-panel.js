@@ -7,11 +7,14 @@ import {
 	PluginDocumentSettingPanel,
 	store as editorStore,
 } from '@wordpress/editor';
+import { store as noticesStore } from '@wordpress/notices';
 import { registerPlugin } from '@wordpress/plugins';
-import { useCallback } from '@wordpress/element';
+import { useCallback, useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 
 const META_KEY = '_abet_use_default_content';
+
+const PREFILL_NOTICE_ID = 'abet-prefill-notice';
 
 /**
  * Document setting panel to toggle whether a Post Type Template prefills new posts.
@@ -58,4 +61,43 @@ const AbetDefaultContentPanel = () => {
 	);
 };
 
+/**
+ * Say at the top of the editor that this Post Type Template prefills new posts.
+ *
+ * Follows the toggle as it is edited, before saving, so the notice never disagrees with the
+ * setting in the sidebar. Not dismissible: it describes the template's state, not a one-off event.
+ *
+ * @return {null} Renders nothing itself; the editor shows the notice.
+ */
+const AbetPrefillNotice = () => {
+	const { isTemplate, prefill } = useSelect((select) => {
+		const editor = select(editorStore);
+		return {
+			isTemplate: editor.getCurrentPostType() === 'block-templates',
+			prefill: !!(editor.getEditedPostAttribute('meta') || {})[META_KEY],
+		};
+	}, []);
+	const { createNotice, removeNotice } = useDispatch(noticesStore);
+
+	useEffect(() => {
+		if (!isTemplate || !prefill) {
+			return;
+		}
+
+		createNotice(
+			'info',
+			__(
+				'Prefill is on: new posts of this post type start with this template’s blocks and the content entered in them.',
+				'block-editor-templates'
+			),
+			{ id: PREFILL_NOTICE_ID, isDismissible: false }
+		);
+
+		return () => removeNotice(PREFILL_NOTICE_ID);
+	}, [isTemplate, prefill, createNotice, removeNotice]);
+
+	return null;
+};
+
 registerPlugin('abet-default-content', { render: AbetDefaultContentPanel });
+registerPlugin('abet-prefill-notice', { render: AbetPrefillNotice });
