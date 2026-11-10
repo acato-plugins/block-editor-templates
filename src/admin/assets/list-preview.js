@@ -82,17 +82,17 @@ const onPreviewKeyDown = (event) => {
 	element.scrollBy({ top: distance(element) });
 };
 
+/**
+ * Thumbnails that have not been picked up yet.
+ */
+const PENDING_SELECTOR =
+	'.abet-template-preview[data-content]:not([data-abet-ready])';
+
 domReady(() => {
-	const previews = document.querySelectorAll(
-		'.abet-template-preview[data-content]'
-	);
-	if (!previews.length) {
+	const list = document.getElementById('the-list');
+	if (!list) {
 		return;
 	}
-
-	previews.forEach((preview) =>
-		preview.addEventListener('keydown', onPreviewKeyDown)
-	);
 
 	// The post editor registers the core blocks itself; this list screen has to do it.
 	if (!getBlockType('core/paragraph')) {
@@ -105,23 +105,37 @@ domReady(() => {
 		dispatch(blockEditorStore).updateSettings(settings);
 	}
 
-	if (!('IntersectionObserver' in window)) {
-		previews.forEach(renderPreview);
-		return;
-	}
-
 	// Each thumbnail is an iframe: only build the ones that come near the viewport.
-	const observer = new window.IntersectionObserver(
-		(entries) =>
-			entries.forEach(({ isIntersecting, target }) => {
-				if (!isIntersecting) {
-					return;
-				}
-				observer.unobserve(target);
-				renderPreview(target);
-			}),
-		{ rootMargin: '200px' }
-	);
+	const visibility =
+		'IntersectionObserver' in window
+			? new window.IntersectionObserver(
+					(entries) =>
+						entries.forEach(({ isIntersecting, target }) => {
+							if (!isIntersecting) {
+								return;
+							}
+							visibility.unobserve(target);
+							renderPreview(target);
+						}),
+					{ rootMargin: '200px' }
+				)
+			: null;
 
-	previews.forEach((preview) => observer.observe(preview));
+	const pickUp = (root) =>
+		root.querySelectorAll(PENDING_SELECTOR).forEach((preview) => {
+			preview.dataset.abetReady = '';
+			preview.addEventListener('keydown', onPreviewKeyDown);
+			if (visibility) {
+				visibility.observe(preview);
+			} else {
+				renderPreview(preview);
+			}
+		});
+
+	pickUp(list);
+
+	// Quick Edit replaces a row with a freshly rendered one: give its thumbnail a preview too.
+	new window.MutationObserver(() => pickUp(list)).observe(list, {
+		childList: true,
+	});
 });

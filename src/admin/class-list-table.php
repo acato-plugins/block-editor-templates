@@ -64,26 +64,32 @@ class List_Table {
 	 */
 	private function __construct() {
 		add_action( 'current_screen', [ self::class, 'setup_screen' ] );
-		add_action( 'init', [ self::class, 'track_last_editor' ], 20 );
+		add_action( 'init', [ self::class, 'register_post_type_hooks' ], 20 );
 	}
 
 	/**
-	 * Record who saves a template in the block editor.
+	 * Hook in per template post type: the columns, and recording who saves in the block editor.
 	 *
-	 * WordPress records the last editor ('_edit_last') only when a post is saved from the classic
-	 * edit screen, Quick Edit or bulk edit. The block editor saves through the REST API, which does
-	 * not, so without this "Modified by" would never know who changed a template there.
+	 * The columns are registered here rather than on the list screen only, because Quick Edit
+	 * re-renders its row in an AJAX request (wp_ajax_inline_save()), which has no current screen.
+	 * Without them that row would lose its cells and the rest would shift under the wrong headers.
 	 *
 	 * @return void
 	 */
-	public static function track_last_editor() {
+	public static function register_post_type_hooks() {
 		foreach ( array_keys( Admin::post_types() ) as $post_type ) {
+			add_filter( 'manage_' . $post_type . '_posts_columns', [ self::class, 'add_columns' ], 20 );
+			add_action( 'manage_' . $post_type . '_posts_custom_column', [ self::class, 'render_column' ], 10, 2 );
 			add_action( 'rest_after_insert_' . $post_type, [ self::class, 'record_last_editor' ] );
 		}
 	}
 
 	/**
 	 * Store the current user as the last editor of a template saved through the REST API.
+	 *
+	 * WordPress records the last editor ('_edit_last') only when a post is saved from the classic
+	 * edit screen, Quick Edit or bulk edit. The block editor saves through the REST API, which does
+	 * not, so without this "Modified by" would never know who changed a template there.
 	 *
 	 * @param WP_Post $post The saved template.
 	 *
@@ -108,8 +114,6 @@ class List_Table {
 			return;
 		}
 
-		add_filter( 'manage_' . $screen->post_type . '_posts_columns', [ self::class, 'add_columns' ], 20 );
-		add_action( 'manage_' . $screen->post_type . '_posts_custom_column', [ self::class, 'render_column' ], 10, 2 );
 		add_filter( 'manage_' . $screen->id . '_sortable_columns', [ self::class, 'sortable_columns' ] );
 		add_action( 'restrict_manage_posts', [ self::class, 'render_user_filters' ], 10, 2 );
 		add_action( 'pre_get_posts', [ self::class, 'filter_on_modified_by' ] );
