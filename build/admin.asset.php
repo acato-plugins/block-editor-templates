@@ -9,8 +9,9 @@
 		'wp-element',
 		'wp-hooks',
 		'wp-i18n',
+		'wp-notices',
 		'wp-plugins',
 		'wp-primitives'
 	),
-	'version' => 'cad607e0242e47b23eb1'
+	'version' => '6bcdd8a533c05d058731'
 );

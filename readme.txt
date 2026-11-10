@@ -4,7 +4,7 @@ Tags: block editor, gutenberg, block templates
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 7.2
-Stable tag: 1.1.4
+Stable tag: 1.2.0
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl.html
 
@@ -67,6 +67,18 @@ Please tell us, we'd like to fix it. Small wording mistakes are easy to miss, an
 You can report security bugs through the Patchstack Vulnerability Disclosure Program. The Patchstack team helps validate, triage and handle any security vulnerabilities. [Report a security vulnerability.]( https://patchstack.com/database/vdp/398f3310-d285-4489-ae3b-07b8ab344119 )
 
 == Changelog ==
+
+= 1.2.0 =
+Release Date: November 10th, 2026
+
+Feature: The template lists show a preview of each template's blocks, rendered by the block editor itself so custom blocks look as they do in the editor. A tall template scrolls inside its thumbnail, with the mouse or the keyboard.
+Feature: The Date column of the template lists is called "Created" and shows who created the template under its date. A new "Modified" column shows when a template was last modified and by whom.
+Feature: "All creators" and "All modifiers" filters on the template lists.
+Feature: Block Templates > Settings switches the preview, the author under "Created" and the "Modified" column on or off. On a multisite network a super admin sets the default under Network Admin > Settings > Block Editor Templates, and each site can follow it or use its own settings.
+Feature: The editor of a Post Type Template says at the top when the template prefills new posts.
+Fix: Saving a template in the block editor now records who saved it, which WordPress itself only does for the classic edit screen and Quick Edit.
+Fix: The help text of the "Prefill new posts" column is a real tooltip that also opens on keyboard focus, instead of a title attribute that browsers show late or not at all.
+Chore: Builds with Node 24.
 
 = 1.1.4 =
 Release Date: September 7th, 2026

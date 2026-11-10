@@ -1,0 +1,43 @@
+/**
+ * Block Templates > Settings.
+ */
+
+.abet-settings {
+	max-inline-size: 720px;
+	margin-block-start: 16px;
+}
+
+.abet-settings__intro {
+	margin-block: 0 24px;
+	font-size: 14px;
+	color: #50575e;
+}
+
+.abet-settings__notice {
+	margin-block-end: 16px;
+	margin-inline: 0;
+}
+
+.abet-settings__title {
+	margin: 0;
+	font-size: 15px;
+	font-weight: 600;
+	line-height: 1.4;
+}
+
+.abet-settings__source {
+	background-color: #f6f7f7;
+}
+
+.abet-settings__list {
+	display: flex;
+	flex-direction: column;
+	gap: 24px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.abet-settings__item {
+	margin: 0;
+}
