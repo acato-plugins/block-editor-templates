@@ -4,6 +4,13 @@ on:
   push:
     tags:
       - "*"
+# Both WordPress.org workflows commit to the same SVN repository. A release merge changes
+# readme.txt, so deploy_assets.yml (push to main) runs right before deploy.yml (the release tag),
+# and two commits racing on trunk/readme.txt make the second fail with an SVN conflict. One
+# group, never cancelled, makes them run one after the other.
+concurrency:
+  group: wordpress-org-svn
+  cancel-in-progress: false
 jobs:
   tag:
     name: New tag
