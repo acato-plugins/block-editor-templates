@@ -92,10 +92,6 @@ class Settings {
 				'label'       => __( 'Enable preview', 'block-editor-templates' ),
 				'description' => __( 'Show a thumbnail of each template’s blocks in the template lists.', 'block-editor-templates' ),
 			],
-			'created_on'  => [
-				'label'       => __( 'Enable “Created on”', 'block-editor-templates' ),
-				'description' => __( 'Show when each template was created, in place of the Date column, which shows the publish date of a published template but the last-modified date of a draft.', 'block-editor-templates' ),
-			],
 			'created_by'  => [
 				'label'       => __( 'Enable “Created by”', 'block-editor-templates' ),
 				'description' => __( 'Show who created each template.', 'block-editor-templates' ),

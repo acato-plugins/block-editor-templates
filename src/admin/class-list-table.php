@@ -104,10 +104,7 @@ class List_Table {
 	}
 
 	/**
-	 * Add the enabled columns: the preview before the title, the others where the date column was.
-	 *
-	 * "Created on" replaces WordPress' Date column, which shows the publish date of a published
-	 * template but the last-modified date of a draft. "Modified by" carries the modified date.
+	 * Add the enabled columns: the preview before the title, the people before the date.
 	 *
 	 * @param array<string, string> $columns The existing list-table columns.
 	 *
@@ -121,28 +118,24 @@ class List_Table {
 			}
 
 			if ( 'date' === $key ) {
-				$result = array_merge( $result, self::date_columns() );
-				if ( Settings::enabled( 'created_on' ) ) {
-					continue;
-				}
+				$result = array_merge( $result, self::people_columns() );
 			}
 
 			$result[ $key ] = $label;
 		}
 
-		// No date column (removed by another plugin): add ours at the end.
-		return $result + self::date_columns();
+		// No date column (removed by another plugin): add the people columns at the end.
+		return $result + self::people_columns();
 	}
 
 	/**
-	 * Make our columns sortable: "Created on" as the Date column does, the users by name.
+	 * Make the people columns sortable, by the user's name.
 	 *
 	 * @param array<string, mixed> $columns The sortable columns.
 	 *
 	 * @return array<string, mixed>
 	 */
 	public static function sortable_columns( $columns ) {
-		$columns['abet_created_on']  = [ 'date', true ];
 		$columns['abet_created_by']  = [ 'abet_created_by', false ];
 		$columns['abet_modified_by'] = [ 'abet_modified_by', false ];
 
@@ -182,15 +175,12 @@ class List_Table {
 	}
 
 	/**
-	 * The enabled Created on / Created by / Modified by columns.
+	 * The enabled Created by / Modified by columns.
 	 *
 	 * @return array<string, string>
 	 */
-	private static function date_columns() {
+	private static function people_columns() {
 		$columns = [];
-		if ( Settings::enabled( 'created_on' ) ) {
-			$columns['abet_created_on'] = __( 'Created on', 'block-editor-templates' );
-		}
 		if ( Settings::enabled( 'created_by' ) ) {
 			$columns['abet_created_by'] = __( 'Created by', 'block-editor-templates' );
 		}
@@ -218,9 +208,6 @@ class List_Table {
 		switch ( $column ) {
 			case 'abet_preview':
 				self::render_preview( $post );
-				break;
-			case 'abet_created_on':
-				echo esc_html( self::format_date( get_the_date( '', $post ), get_the_time( '', $post ) ) );
 				break;
 			case 'abet_created_by':
 				self::prime_users();
