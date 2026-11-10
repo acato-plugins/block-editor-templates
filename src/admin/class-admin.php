@@ -29,6 +29,14 @@ class Admin {
 	private static $registered_blocks;
 
 	/**
+	 * The help text of the "Prefill new posts" column, printed hidden in the footer once the
+	 * column has been added, as the description of its help button.
+	 *
+	 * @var string
+	 */
+	private static $default_content_help = '';
+
+	/**
 	 * The singleton instance of this class.
 	 *
 	 * @access private
@@ -71,6 +79,7 @@ class Admin {
 		add_filter( 'allowed_block_types_all', [ self::class, 'inherit_allowed_block_types' ], PHP_INT_MAX, 2 );
 		add_filter( 'manage_block-templates_posts_columns', [ self::class, 'add_default_content_column' ] );
 		add_action( 'manage_block-templates_posts_custom_column', [ self::class, 'render_default_content_column' ], 10, 2 );
+		add_action( 'admin_footer-edit.php', [ self::class, 'print_default_content_help' ] );
 
 		add_action( 'after_setup_theme', [ self::class, 'register_classic_theme_hooks' ] );
 	}
@@ -1366,20 +1375,37 @@ class Admin {
 
 		$help = __( 'When enabled, new posts of this post type start with this template’s blocks and the content entered in them. When disabled, new posts get only the empty block structure. Only applies when creating a post in the WordPress admin.', 'block-editor-templates' );
 
-		// The icon is a decorative mouse-hover hint (title); the help text is exposed to assistive
-		// technology as real text via screen-reader-text so it does not depend on the tooltip.
+		// A help button that shows the text as a tooltip on hover and keyboard focus (styled in
+		// list-preview.scss, dismissed with Escape by List_Table). The text is drawn from data-tip so
+		// it stays out of the header's own text, which Screen Options uses as the column's label;
+		// screen readers get it as the button's description from a hidden copy in the footer.
 		$columns['abet_default_content'] = sprintf(
-			'%1$s <span class="dashicons dashicons-editor-help" style="font-size:16px;width:16px;height:16px;vertical-align:text-bottom;cursor:help;" aria-hidden="true" title="%2$s"></span><span class="screen-reader-text">%3$s</span>',
+			'%1$s <button type="button" class="abet-help" aria-label="%2$s" aria-describedby="abet-help-default-content" data-tip="%3$s"><span class="dashicons dashicons-editor-help" aria-hidden="true"></span></button>',
 			esc_html__( 'Prefill new posts', 'block-editor-templates' ),
-			esc_attr( $help ),
-			esc_html( $help )
+			esc_attr__( 'About “Prefill new posts”', 'block-editor-templates' ),
+			esc_attr( $help )
 		);
+
+		self::$default_content_help = $help;
 
 		if ( null !== $date ) {
 			$columns['date'] = $date;
 		}
 
 		return $columns;
+	}
+
+	/**
+	 * Print the hidden description of the "Prefill new posts" help button.
+	 *
+	 * @return void
+	 */
+	public static function print_default_content_help() {
+		if ( '' === self::$default_content_help ) {
+			return;
+		}
+
+		printf( '<p id="abet-help-default-content" hidden>%s</p>', esc_html( self::$default_content_help ) );
 	}
 
 	/**

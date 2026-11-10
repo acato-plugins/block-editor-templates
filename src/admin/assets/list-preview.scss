@@ -43,3 +43,70 @@
 .abet-list-meta {
 	color: #646970;
 }
+
+/* Help button in a column header, with its text as a tooltip on hover and keyboard focus.
+   The tooltip is the button's own ::after, so moving the pointer onto it keeps it open. */
+.abet-help {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-inline-size: 24px;
+	min-block-size: 24px;
+	margin: 0;
+	padding: 0;
+	vertical-align: middle;
+	border: 0;
+	border-radius: 2px;
+	background: none;
+	color: #646970;
+	cursor: help;
+
+	.dashicons {
+		inline-size: 16px;
+		block-size: 16px;
+		font-size: 16px;
+	}
+
+	&:hover,
+	&:focus-visible {
+		color: var(--wp-admin-theme-color, #3858e9);
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--wp-admin-theme-color, #3858e9);
+		outline-offset: 0;
+		box-shadow: none;
+	}
+
+	&::after {
+		content: attr(data-tip);
+		position: absolute;
+		z-index: 100;
+		inset-block-start: calc(100% + 6px);
+		inset-inline-start: 0;
+		display: none;
+		inline-size: max-content;
+		max-inline-size: 280px;
+		padding-block: 8px;
+		padding-inline: 12px;
+		border-radius: 2px;
+		background-color: #1e1e1e;
+		color: #fff;
+		font-size: 12px;
+		font-weight: 400;
+		line-height: 1.5;
+		text-align: start;
+		white-space: normal;
+		cursor: auto;
+	}
+
+	&:hover::after,
+	&:focus-visible::after {
+		display: block;
+	}
+
+	&.is-dismissed::after {
+		display: none;
+	}
+}

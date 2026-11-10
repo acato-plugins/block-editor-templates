@@ -119,6 +119,7 @@ class List_Table {
 		add_action( 'pre_get_posts', [ self::class, 'filter_on_modified_by' ] );
 		add_filter( 'posts_clauses', [ self::class, 'sort_on_user' ], 10, 2 );
 
+		add_action( 'admin_enqueue_scripts', [ self::class, 'enqueue_list_assets' ] );
 		if ( self::preview_enabled() ) {
 			add_action( 'admin_enqueue_scripts', [ self::class, 'enqueue_preview_assets' ] );
 		}
@@ -541,8 +542,38 @@ class List_Table {
 		}
 
 		wp_enqueue_style( 'wp-block-editor' );
+	}
+
+	/**
+	 * Load the list styles (columns, thumbnails, help tooltips) on every template list.
+	 *
+	 * Also lets Escape close a help tooltip (WCAG 1.4.13): it hides while the pointer or focus
+	 * stays on its button, and comes back the next time.
+	 *
+	 * @return void
+	 */
+	public static function enqueue_list_assets() {
 		if ( file_exists( ABET_ABSPATH . ABET_ASSETS_DIR . self::ENTRY . '.css' ) ) {
-			wp_enqueue_style( self::HANDLE, ABET_ASSETS_URL . self::ENTRY . '.css', [], $asset['version'] ?? ABET_VERSION );
+			wp_enqueue_style( self::HANDLE, ABET_ASSETS_URL . self::ENTRY . '.css', [], Admin::script_asset( self::ENTRY )['version'] ?? ABET_VERSION );
 		}
+
+		wp_add_inline_script(
+			'common',
+			"document.addEventListener( 'keydown', function ( event ) {
+				if ( 'Escape' !== event.key ) {
+					return;
+				}
+				document.querySelectorAll( '.abet-help:hover, .abet-help:focus' ).forEach( function ( button ) {
+					button.classList.add( 'is-dismissed' );
+					var reset = function () {
+						if ( ! button.matches( ':hover, :focus' ) ) {
+							button.classList.remove( 'is-dismissed' );
+						}
+					};
+					button.addEventListener( 'mouseleave', reset );
+					button.addEventListener( 'blur', reset );
+				} );
+			} );"
+		);
 	}
 }
