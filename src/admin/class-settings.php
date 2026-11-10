@@ -93,12 +93,12 @@ class Settings {
 				'description' => __( 'Show a thumbnail of each template’s blocks in the template lists.', 'block-editor-templates' ),
 			],
 			'created_by'  => [
-				'label'       => __( 'Enable “Created by”', 'block-editor-templates' ),
-				'description' => __( 'Show who created each template.', 'block-editor-templates' ),
+				'label'       => __( 'Show the author under “Created”', 'block-editor-templates' ),
+				'description' => __( 'Show who created each template under its date, with an “All creators” filter.', 'block-editor-templates' ),
 			],
 			'modified_by' => [
-				'label'       => __( 'Enable “Modified by”', 'block-editor-templates' ),
-				'description' => __( 'Show who last modified each template, and when.', 'block-editor-templates' ),
+				'label'       => __( 'Enable “Modified”', 'block-editor-templates' ),
+				'description' => __( 'Show when each template was last modified and by whom, with an “All modifiers” filter.', 'block-editor-templates' ),
 			],
 		];
 	}

@@ -82,6 +82,8 @@ class List_Table {
 			add_action( 'manage_' . $post_type . '_posts_custom_column', [ self::class, 'render_column' ], 10, 2 );
 			add_action( 'rest_after_insert_' . $post_type, [ self::class, 'record_last_editor' ] );
 		}
+
+		add_filter( 'post_date_column_time', [ self::class, 'add_author_to_date' ], 10, 3 );
 	}
 
 	/**
@@ -117,7 +119,6 @@ class List_Table {
 		add_filter( 'manage_' . $screen->id . '_sortable_columns', [ self::class, 'sortable_columns' ] );
 		add_action( 'restrict_manage_posts', [ self::class, 'render_user_filters' ], 10, 2 );
 		add_action( 'pre_get_posts', [ self::class, 'filter_on_modified_by' ] );
-		add_filter( 'posts_clauses', [ self::class, 'sort_on_user' ], 10, 2 );
 
 		add_action( 'admin_enqueue_scripts', [ self::class, 'enqueue_list_assets' ] );
 		if ( self::preview_enabled() ) {
@@ -139,13 +140,16 @@ class List_Table {
 	}
 
 	/**
-	 * Add the enabled columns: the preview before the title, the people before the date.
+	 * Add the enabled columns: the preview before the title, and "Modified" after the date column,
+	 * which is relabelled "Created" (see self::add_author_to_date() for the author under it).
 	 *
 	 * @param array<string, string> $columns The existing list-table columns.
 	 *
 	 * @return array<string, string>
 	 */
 	public static function add_columns( $columns ) {
+		$modified = Settings::enabled( 'modified_by' ) ? [ 'abet_modified' => __( 'Modified', 'block-editor-templates' ) ] : [];
+
 		$result = [];
 		foreach ( $columns as $key => $label ) {
 			if ( 'title' === $key && self::preview_enabled() ) {
@@ -153,77 +157,52 @@ class List_Table {
 			}
 
 			if ( 'date' === $key ) {
-				$result = array_merge( $result, self::people_columns() );
+				$result['date'] = __( 'Created', 'block-editor-templates' );
+				$result        += $modified;
+				continue;
 			}
 
 			$result[ $key ] = $label;
 		}
 
-		// No date column (removed by another plugin): add the people columns at the end.
-		return $result + self::people_columns();
+		// No date column (removed by another plugin): add "Modified" at the end.
+		return $result + $modified;
 	}
 
 	/**
-	 * Make the people columns sortable, by the user's name.
+	 * Let "Modified" sort by the modified date, the way "Created" sorts by date.
 	 *
 	 * @param array<string, mixed> $columns The sortable columns.
 	 *
 	 * @return array<string, mixed>
 	 */
 	public static function sortable_columns( $columns ) {
-		$columns['abet_created_by']  = [ 'abet_created_by', false ];
-		$columns['abet_modified_by'] = [ 'abet_modified_by', false ];
+		$columns['abet_modified'] = [ 'modified', true ];
 
 		return $columns;
 	}
 
 	/**
-	 * Sort the list on the name of the user who created or last modified a template.
+	 * Add "by <author>" under the date in the "Created" (date) column of the template lists.
 	 *
-	 * Ties, and templates whose user is unknown, fall back to the creation or modification date.
+	 * @param string  $time   The date and time WordPress prints in the date column.
+	 * @param WP_Post $post   The post of the row.
+	 * @param string  $column The column, 'date'.
 	 *
-	 * @param array<string, string> $clauses The query clauses.
-	 * @param \WP_Query             $query   The query.
-	 *
-	 * @return array<string, string>
+	 * @return string
 	 */
-	public static function sort_on_user( $clauses, $query ) {
-		if ( ! $query->is_main_query() ) {
-			return $clauses;
+	public static function add_author_to_date( $time, $post, $column ) {
+		if (
+			'date' !== $column
+			|| ! array_key_exists( $post->post_type, Admin::post_types() )
+			|| ! Settings::enabled( 'created_by' )
+		) {
+			return $time;
 		}
 
-		global $wpdb;
+		self::prime_users();
 
-		$orderby = $query->get( 'orderby' );
-		$order   = 'DESC' === strtoupper( (string) $query->get( 'order' ) ) ? 'DESC' : 'ASC';
-
-		if ( 'abet_created_by' === $orderby ) {
-			$clauses['join']   .= " LEFT JOIN {$wpdb->users} AS abet_creator ON abet_creator.ID = {$wpdb->posts}.post_author";
-			$clauses['orderby'] = "abet_creator.display_name {$order}, {$wpdb->posts}.post_date DESC";
-		} elseif ( 'abet_modified_by' === $orderby ) {
-			$clauses['join']   .= " LEFT JOIN {$wpdb->postmeta} AS abet_edit_last ON abet_edit_last.post_id = {$wpdb->posts}.ID AND abet_edit_last.meta_key = '_edit_last'"
-				. " LEFT JOIN {$wpdb->users} AS abet_modifier ON abet_modifier.ID = abet_edit_last.meta_value";
-			$clauses['orderby'] = "abet_modifier.display_name {$order}, {$wpdb->posts}.post_modified DESC";
-		}
-
-		return $clauses;
-	}
-
-	/**
-	 * The enabled Created by / Modified by columns.
-	 *
-	 * @return array<string, string>
-	 */
-	private static function people_columns() {
-		$columns = [];
-		if ( Settings::enabled( 'created_by' ) ) {
-			$columns['abet_created_by'] = __( 'Created by', 'block-editor-templates' );
-		}
-		if ( Settings::enabled( 'modified_by' ) ) {
-			$columns['abet_modified_by'] = __( 'Modified by', 'block-editor-templates' );
-		}
-
-		return $columns;
+		return $time . self::by_user( (int) $post->post_author, $post, 'author' );
 	}
 
 	/**
@@ -244,36 +223,20 @@ class List_Table {
 			case 'abet_preview':
 				self::render_preview( $post );
 				break;
-			case 'abet_created_by':
+			case 'abet_modified':
 				self::prime_users();
-				self::render_user( (int) $post->post_author, $post, 'author' );
-				break;
-			case 'abet_modified_by':
-				self::prime_users();
-				self::render_user( (int) get_post_meta( $post->ID, '_edit_last', true ), $post, self::MODIFIED_BY_ARG );
-				printf(
-					'<br /><span class="abet-list-meta">%s</span>',
-					esc_html( self::format_date( get_the_modified_date( '', $post ), get_the_modified_time( '', $post ) ) )
+				// Formatted exactly like WordPress' own date column next to it, with its own strings.
+				echo esc_html(
+					sprintf(
+						/* translators: 1: Post date, 2: Post time. */
+						__( '%1$s at %2$s' ), // phpcs:ignore WordPress.WP.I18n.MissingArgDomain -- WordPress' own string, to match the date column.
+						get_the_modified_time( __( 'Y/m/d' ), $post ), // phpcs:ignore WordPress.WP.I18n.MissingArgDomain -- WordPress' own date format, to match the date column.
+						get_the_modified_time( __( 'g:i a' ), $post ) // phpcs:ignore WordPress.WP.I18n.MissingArgDomain -- WordPress' own time format, to match the date column.
+					)
 				);
+				echo self::by_user( (int) get_post_meta( $post->ID, '_edit_last', true ), $post, self::MODIFIED_BY_ARG ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in by_user().
 				break;
 		}
-	}
-
-	/**
-	 * Format a date and time the way the list's Date column does.
-	 *
-	 * @param string|int|false $date The formatted date.
-	 * @param string|int|false $time The formatted time.
-	 *
-	 * @return string
-	 */
-	private static function format_date( $date, $time ) {
-		return sprintf(
-			/* translators: 1: date, 2: time. */
-			__( '%1$s at %2$s', 'block-editor-templates' ),
-			(string) $date,
-			(string) $time
-		);
 	}
 
 	/**
@@ -314,26 +277,21 @@ class List_Table {
 	}
 
 	/**
-	 * Render a user's name, linked to the list filtered on that user.
+	 * A "by <name>" line, the name linked to the list filtered on that user; empty when unknown.
 	 *
 	 * @param int     $user_id   The user ID, or 0 when unknown.
 	 * @param WP_Post $post      The template post.
-	 * @param string  $query_arg The filter: 'author' (created by) or self::MODIFIED_BY_ARG.
+	 * @param string  $query_arg The filter: 'author' (created) or self::MODIFIED_BY_ARG.
 	 *
-	 * @return void
+	 * @return string Escaped HTML.
 	 */
-	private static function render_user( $user_id, $post, $query_arg ) {
+	private static function by_user( $user_id, $post, $query_arg ) {
 		$user = $user_id ? get_userdata( $user_id ) : false;
 		if ( ! $user ) {
-			printf(
-				'<span aria-hidden="true">&#8212;</span><span class="screen-reader-text">%s</span>',
-				esc_html__( 'Unknown', 'block-editor-templates' )
-			);
-
-			return;
+			return '';
 		}
 
-		printf(
+		$link = sprintf(
 			'<a href="%1$s">%2$s</a>',
 			esc_url(
 				add_query_arg(
@@ -346,6 +304,12 @@ class List_Table {
 			),
 			esc_html( $user->display_name )
 		);
+
+		return '<br /><span class="abet-list-meta">' . sprintf(
+			/* translators: %s: user name. */
+			esc_html__( 'by %s', 'block-editor-templates' ),
+			$link
+		) . '</span>';
 	}
 
 	/**
