@@ -44,7 +44,7 @@ const CONTROL_ATTRIBUTE = 'textAsPlaceholder';
  * Whether an attribute holds a non-empty value worth moving between a base
  * attribute and its placeholder counterpart.
  *
- * @param {*} value - The attribute value.
+ * @param {unknown} value - The attribute value.
  * @return {boolean} True when the value is set and not empty.
  */
 const hasValue = (value) =>

@@ -1,19 +1,41 @@
-# See: https://github.com/rtCamp/action-phpcs-code-review
-on: pull_request
-
+# Checks the PHP against the ruleset in phpcs.xml.dist (WordPress-Extra,
+# WordPress-Docs and PHPCompatibilityWP). Runs PHP_CodeSniffer directly, so it
+# needs no bot token, and fails the check when a sniff reports an error.
 name: Inspections
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
 jobs:
-  runPHPCSInspection:
+  phpcs:
     name: Run PHPCS inspection
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-      with:
-        ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/checkout@v5
 
-    - name: Run PHPCS inspection
-      uses: rtCamp/action-phpcs-code-review@v2.0.3
-      env:
-        GH_BOT_TOKEN: ${{ secrets.GH_BOT_TOKEN }}
-        SKIP_FOLDERS: ".github,build,languages"
-        PHPCS_SNIFFS_EXCLUDE: "WordPress.Files.FileName"
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          coverage: none
+          tools: cs2pr
+
+      - name: Install the coding standards
+        run: |
+          composer global config --no-interaction allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer global require --no-interaction --no-progress \
+            wp-coding-standards/wpcs:^3.1 \
+            phpcompatibility/phpcompatibility-wp:^2.1
+
+      - name: Run PHPCS
+        shell: bash
+        run: |
+          status=0
+          "$(composer global config bin-dir --absolute --quiet)/phpcs" \
+            --standard=phpcs.xml.dist --extensions=php -s \
+            --report-full --report-summary --report-checkstyle=phpcs-report.xml . || status=$?
+          [ -s phpcs-report.xml ] && cs2pr phpcs-report.xml || true
+          exit $status
