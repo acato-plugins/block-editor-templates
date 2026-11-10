@@ -8,5 +8,5 @@
 		'wp-dom-ready',
 		'wp-element'
 	),
-	'version' => '0734e2ce88f0c1146c71'
+	'version' => 'f4645a2af9fdb27c4e7e'
 );

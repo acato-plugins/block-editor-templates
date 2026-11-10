@@ -1,30 +1,42 @@
 /**
- * Template list tables: the Preview, Created by and Last edited by columns.
+ * Template list tables: the Preview, Created by and Modified by columns.
  */
 
 .wp-list-table .column-abet_preview {
-	width: 216px;
+	inline-size: 216px;
 }
 
-/* A fixed-size, cropped thumbnail of the template, linking to its editor. */
+/* A fixed-size thumbnail of the template that links to its editor and scrolls
+   when the template is taller than the box (mouse wheel, or arrow keys once focused). */
 .abet-template-preview {
 	display: block;
-	overflow: hidden;
-	width: 200px;
-	max-height: 150px;
+	inline-size: 200px;
+	max-inline-size: 100%;
+	max-block-size: 200px;
+
+	/* Physical on purpose: overflow-inline/-block are only Baseline newly available
+	   (Chrome 135, Safari 26, Firefox 69), not widely available yet. wp-admin is
+	   always horizontal-tb, where x is inline and y is block. */
+	overflow-x: hidden;
+	overflow-y: auto;
 
 	border: 1px solid #dcdcde;
 	border-radius: 2px;
 	background-color: #fff;
 
-	/* Clicks land on the link, not inside the preview iframe. */
+	/* Wheel and clicks land on the link (the scroll container), not inside the preview iframe. */
 	> * {
 		pointer-events: none;
 	}
 
-	&:hover,
-	&:focus {
+	&:hover {
 		border-color: var(--wp-admin-theme-color, #3858e9);
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--wp-admin-theme-color, #3858e9);
+		outline-offset: 1px;
+		box-shadow: none;
 	}
 }
 

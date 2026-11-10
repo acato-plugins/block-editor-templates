@@ -42,6 +42,46 @@ const renderPreview = (element) => {
 	);
 };
 
+/**
+ * How far each key scrolls a focused thumbnail, as a function of its visible height.
+ *
+ * @type {Object<string, function(HTMLElement): number>}
+ */
+const SCROLL_KEYS = {
+	ArrowDown: () => 40,
+	ArrowUp: () => -40,
+	PageDown: (element) => element.clientHeight,
+	PageUp: (element) => -element.clientHeight,
+	Home: (element) => -element.scrollHeight,
+	End: (element) => element.scrollHeight,
+};
+
+/**
+ * Scroll a focused thumbnail with the keyboard.
+ *
+ * A thumbnail is a link that is also its own scroll container. Browsers do not reliably scroll a
+ * focused link with the arrow keys, so do it here, and only when there is something to scroll -
+ * otherwise the keys keep scrolling the page.
+ *
+ * @param {KeyboardEvent} event The keydown event.
+ */
+const onPreviewKeyDown = (event) => {
+	const element = event.currentTarget;
+	const distance = SCROLL_KEYS[event.key];
+	if (
+		!distance ||
+		event.altKey ||
+		event.ctrlKey ||
+		event.metaKey ||
+		element.scrollHeight <= element.clientHeight
+	) {
+		return;
+	}
+
+	event.preventDefault();
+	element.scrollBy({ top: distance(element) });
+};
+
 domReady(() => {
 	const previews = document.querySelectorAll(
 		'.abet-template-preview[data-content]'
@@ -49,6 +89,10 @@ domReady(() => {
 	if (!previews.length) {
 		return;
 	}
+
+	previews.forEach((preview) =>
+		preview.addEventListener('keydown', onPreviewKeyDown)
+	);
 
 	// The post editor registers the core blocks itself; this list screen has to do it.
 	if (!getBlockType('core/paragraph')) {

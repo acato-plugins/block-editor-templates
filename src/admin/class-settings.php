@@ -36,11 +36,23 @@ class Settings {
 	const NETWORK_PAGE = 'abet-network-settings';
 
 	/**
+	 * The script and style handle, and the build entry name, of the settings page.
+	 */
+	const ENTRY = 'settings';
+
+	/**
 	 * The singleton instance of this class.
 	 *
 	 * @var Settings|null $instance The singleton instance of this class.
 	 */
 	private static $instance = null;
+
+	/**
+	 * The hook suffix of the per-site settings page, to load its assets there only.
+	 *
+	 * @var string|false
+	 */
+	private static $hook_suffix = false;
 
 	/**
 	 * Get the singleton instance of this class.
@@ -59,7 +71,10 @@ class Settings {
 	 * Register the hooks.
 	 */
 	private function __construct() {
+		// The settings page saves through the REST API, where admin_init does not run.
 		add_action( 'admin_init', [ self::class, 'register_setting' ] );
+		add_action( 'rest_api_init', [ self::class, 'register_setting' ] );
+		add_action( 'admin_enqueue_scripts', [ self::class, 'enqueue_assets' ] );
 		// After Admin::admin_menu() (priority 10) has added the Block Templates parent menu.
 		add_action( 'admin_menu', [ self::class, 'admin_menu' ], 20 );
 		add_action( 'network_admin_menu', [ self::class, 'network_admin_menu' ] );
@@ -73,17 +88,21 @@ class Settings {
 	 */
 	public static function fields() {
 		return [
-			'preview'        => [
+			'preview'     => [
 				'label'       => __( 'Enable preview', 'block-editor-templates' ),
 				'description' => __( 'Show a thumbnail of each template’s blocks in the template lists.', 'block-editor-templates' ),
 			],
-			'created_by'     => [
+			'created_on'  => [
+				'label'       => __( 'Enable “Created on”', 'block-editor-templates' ),
+				'description' => __( 'Show when each template was created, in place of the Date column, which shows the publish date of a published template but the last-modified date of a draft.', 'block-editor-templates' ),
+			],
+			'created_by'  => [
 				'label'       => __( 'Enable “Created by”', 'block-editor-templates' ),
 				'description' => __( 'Show who created each template.', 'block-editor-templates' ),
 			],
-			'last_edited_by' => [
-				'label'       => __( 'Enable “Last edited by”', 'block-editor-templates' ),
-				'description' => __( 'Show who last edited each template, and when.', 'block-editor-templates' ),
+			'modified_by' => [
+				'label'       => __( 'Enable “Modified by”', 'block-editor-templates' ),
+				'description' => __( 'Show who last modified each template, and when.', 'block-editor-templates' ),
 			],
 		];
 	}
@@ -174,21 +193,34 @@ class Settings {
 	 * @return void
 	 */
 	public static function register_setting() {
+		$properties = array_fill_keys( array_keys( self::fields() ), [ 'type' => 'boolean' ] );
+		if ( is_multisite() ) {
+			$properties['use_network'] = [ 'type' => 'boolean' ];
+		}
+
 		register_setting(
 			self::PAGE,
 			self::OPTION,
 			[
 				'type'              => 'object',
 				'sanitize_callback' => [ self::class, 'sanitize_site_settings' ],
-				'show_in_rest'      => false,
+				// Saved by the settings page through /wp/v2/settings, which requires manage_options.
+				'show_in_rest'      => [
+					'schema' => [
+						'type'                 => 'object',
+						'properties'           => $properties,
+						'additionalProperties' => false,
+					],
+				],
 			]
 		);
 	}
 
 	/**
-	 * Sanitize the per-site form.
+	 * Sanitize the per-site settings, from the REST API or the no-JavaScript form.
 	 *
-	 * @param mixed $input The submitted values.
+	 * @param mixed $input The submitted values: booleans from the REST API, or the form's checkboxes
+	 *                     and its 'source' radio ('network' or 'site').
 	 *
 	 * @return array<string, bool>
 	 */
@@ -196,7 +228,11 @@ class Settings {
 		$sanitized = self::normalize( $input, true );
 
 		if ( is_multisite() ) {
-			$sanitized['use_network'] = is_array( $input ) && isset( $input['source'] ) && 'network' === $input['source'];
+			if ( is_array( $input ) && array_key_exists( 'use_network', $input ) ) {
+				$sanitized['use_network'] = (bool) $input['use_network'];
+			} else {
+				$sanitized['use_network'] = is_array( $input ) && isset( $input['source'] ) && 'network' === $input['source'];
+			}
 		}
 
 		return $sanitized;
@@ -208,7 +244,7 @@ class Settings {
 	 * @return void
 	 */
 	public static function admin_menu() {
-		add_submenu_page(
+		self::$hook_suffix = add_submenu_page(
 			'edit.php?post_type=block-templates',
 			__( 'Block Templates settings', 'block-editor-templates' ),
 			__( 'Settings', 'block-editor-templates' ),
@@ -249,6 +285,8 @@ class Settings {
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+			<?php // The settings script replaces this form; it stays as the fallback without JavaScript. ?>
+			<div id="abet-settings-root">
 			<form method="post" action="<?php echo esc_url( admin_url( 'options.php' ) ); ?>">
 				<?php settings_fields( self::PAGE ); ?>
 				<table class="form-table" role="presentation">
@@ -276,8 +314,53 @@ class Settings {
 				</table>
 				<?php submit_button(); ?>
 			</form>
+			</div>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Load the settings page script, with the settings and their labels.
+	 *
+	 * @param string $hook_suffix The current admin page.
+	 *
+	 * @return void
+	 */
+	public static function enqueue_assets( $hook_suffix ) {
+		if ( ! self::$hook_suffix || self::$hook_suffix !== $hook_suffix || ! file_exists( ABET_ABSPATH . ABET_ASSETS_DIR . self::ENTRY . '.js' ) ) {
+			return;
+		}
+
+		$asset  = Admin::script_asset( self::ENTRY );
+		$handle = 'block-editor-templates-' . self::ENTRY;
+
+		wp_enqueue_script( $handle, ABET_ASSETS_URL . self::ENTRY . '.js', $asset['dependencies'] ?? [], $asset['version'] ?? ABET_VERSION, true );
+		wp_set_script_translations( $handle, 'block-editor-templates' );
+
+		$fields = [];
+		foreach ( self::fields() as $key => $field ) {
+			$fields[] = [ 'key' => $key ] + $field;
+		}
+		wp_add_inline_script(
+			$handle,
+			'window.abetSettings = ' . wp_json_encode(
+				[
+					'option'        => self::OPTION,
+					'fields'        => $fields,
+					'values'        => self::normalize( get_option( self::OPTION, [] ) ),
+					'networkValues' => is_multisite() ? self::network_values() : null,
+					'usesNetwork'   => self::site_uses_network(),
+					'isMultisite'   => is_multisite(),
+				],
+				JSON_HEX_TAG | JSON_UNESCAPED_SLASHES
+			) . ';',
+			'before'
+		);
+
+		wp_enqueue_style( 'wp-components' );
+		if ( file_exists( ABET_ABSPATH . ABET_ASSETS_DIR . self::ENTRY . '.css' ) ) {
+			wp_enqueue_style( $handle, ABET_ASSETS_URL . self::ENTRY . '.css', [ 'wp-components' ], $asset['version'] ?? ABET_VERSION );
+		}
 	}
 
 	/**
