@@ -87,7 +87,7 @@ const AbetPrefillNotice = () => {
 		createNotice(
 			'info',
 			__(
-				'Prefill is on: new posts of this post type start with this template’s blocks and the content entered in them.',
+				'Prefill is enabled: new posts of this post type will start with this template’s blocks and the content entered in them.',
 				'block-editor-templates'
 			),
 			{ id: PREFILL_NOTICE_ID, isDismissible: false }
