@@ -5,10 +5,10 @@
     "author": "Acato",
     "main": "build/index.js",
     "scripts": {
-        "build": "wp-scripts build src/admin/assets/admin.js",
+        "build": "wp-scripts build src/admin/assets/admin.js src/admin/assets/list-preview.js",
         "format:js": "wp-scripts format-js",
         "lint:js": "wp-scripts lint-js",
-        "start": "wp-scripts start src/admin/assets/admin.js",
+        "start": "wp-scripts start src/admin/assets/admin.js src/admin/assets/list-preview.js",
         "packages-update": "wp-scripts packages-update"
     },
     "devDependencies": {
@@ -18,9 +18,12 @@
     },
     "dependencies": {
         "@wordpress/block-editor": "^20.0.0",
+        "@wordpress/block-library": "^12.1.0",
+        "@wordpress/blocks": "^17.1.0",
         "@wordpress/components": "^44.0.0",
         "@wordpress/compose": "^9.1.0",
         "@wordpress/data": "^11.1.0",
+        "@wordpress/dom-ready": "^5.1.0",
         "@wordpress/editor": "^16.1.0",
         "@wordpress/element": "^10.1.0",
         "@wordpress/hooks": "^5.1.0",

@@ -1,0 +1,33 @@
+/**
+ * Template list tables: the Preview, Created by and Last edited by columns.
+ */
+
+.wp-list-table .column-abet_preview {
+	width: 216px;
+}
+
+/* A fixed-size, cropped thumbnail of the template, linking to its editor. */
+.abet-template-preview {
+	display: block;
+	overflow: hidden;
+	width: 200px;
+	max-height: 150px;
+
+	border: 1px solid #dcdcde;
+	border-radius: 2px;
+	background-color: #fff;
+
+	/* Clicks land on the link, not inside the preview iframe. */
+	> * {
+		pointer-events: none;
+	}
+
+	&:hover,
+	&:focus {
+		border-color: var(--wp-admin-theme-color, #3858e9);
+	}
+}
+
+.abet-list-meta {
+	color: #646970;
+}

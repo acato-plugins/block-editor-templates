@@ -11,6 +11,8 @@
 namespace Acato\Block_Editor_Templates;
 
 use Acato\Block_Editor_Templates\Admin\Admin;
+use Acato\Block_Editor_Templates\Admin\List_Table;
+use Acato\Block_Editor_Templates\Admin\Settings;
 
 
 /**
@@ -33,6 +35,8 @@ class Plugin {
 		$this->define_constants();
 
 		Admin::get_instance();
+		Settings::get_instance();
+		List_Table::get_instance();
 	}
 
 	/**

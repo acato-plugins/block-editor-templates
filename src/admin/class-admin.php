@@ -578,10 +578,12 @@ class Admin {
 	 * environment, and stays stable otherwise. That makes it a better cache-buster than a plugin version
 	 * bump or a file modification time: it never busts the cache needlessly and never keeps it too long.
 	 *
-	 * @return array{dependencies?: string[], version?: string} The manifest, or an empty array when absent.
+	 * @param string $entry The build entry name, e.g. 'admin' or 'list-preview'.
+	 *
+	 * @return array{dependencies?: non-empty-string[], version?: string} The manifest, or an empty array when absent.
 	 */
-	private static function script_asset() {
-		$path = ABET_ABSPATH . ABET_ASSETS_DIR . 'admin.asset.php';
+	public static function script_asset( $entry = 'admin' ) {
+		$path = ABET_ABSPATH . ABET_ASSETS_DIR . $entry . '.asset.php';
 
 		return file_exists( $path ) ? require $path : [];
 	}
