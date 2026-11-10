@@ -1,17 +1,24 @@
 # See: https://github.com/10up/action-wordpress-plugin-asset-update
+# Pushes readme.txt and the .wordpress-org assets to WordPress.org when they
+# change on main. Code ships only through a tag (deploy.yml), so code changes
+# in the same push are ignored here instead of failing the run.
 name: Plugin asset/readme update
 on:
   push:
     branches:
       - main
+    paths:
+      - readme.txt
+      - .wordpress-org/**
 jobs:
   trunk:
     name: Push to main
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v4
       - name: WordPress.org plugin asset/readme update
         uses: 10up/action-wordpress-plugin-asset-update@stable
         env:
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          IGNORE_OTHER_FILES: true
