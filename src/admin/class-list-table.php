@@ -64,6 +64,36 @@ class List_Table {
 	 */
 	private function __construct() {
 		add_action( 'current_screen', [ self::class, 'setup_screen' ] );
+		add_action( 'init', [ self::class, 'track_last_editor' ], 20 );
+	}
+
+	/**
+	 * Record who saves a template in the block editor.
+	 *
+	 * WordPress records the last editor ('_edit_last') only when a post is saved from the classic
+	 * edit screen, Quick Edit or bulk edit. The block editor saves through the REST API, which does
+	 * not, so without this "Modified by" would never know who changed a template there.
+	 *
+	 * @return void
+	 */
+	public static function track_last_editor() {
+		foreach ( array_keys( Admin::post_types() ) as $post_type ) {
+			add_action( 'rest_after_insert_' . $post_type, [ self::class, 'record_last_editor' ] );
+		}
+	}
+
+	/**
+	 * Store the current user as the last editor of a template saved through the REST API.
+	 *
+	 * @param WP_Post $post The saved template.
+	 *
+	 * @return void
+	 */
+	public static function record_last_editor( $post ) {
+		$user_id = get_current_user_id();
+		if ( $user_id ) {
+			update_post_meta( $post->ID, '_edit_last', $user_id );
+		}
 	}
 
 	/**
