@@ -1,0 +1,27 @@
+/**
+ * The banner's look, shared by the card beside the menu and the walkthrough's steps: near black,
+ * a green glow top right and a purple one bottom right, and a faint ring that echoes the arcs of
+ * the banner. White at 85% on the lightest point of the glow is still 7:1.
+ */
+
+$ink: #0b0c10;
+$arrow: #0d0e12;
+
+@mixin banner {
+	background:
+		radial-gradient(circle at 112% 50%, transparent 34%, rgb(255 255 255 / 0.05) 34.5%, rgb(255 255 255 / 0.05) 44%, transparent 44.5%),
+		radial-gradient(120% 110% at 100% 0%, rgb(62 170 120 / 0.42), transparent 58%),
+		radial-gradient(110% 110% at 100% 100%, rgb(168 44 184 / 0.38), transparent 58%),
+		linear-gradient(135deg, $ink, #16181e);
+	color: #fff;
+
+	// More contrast: plain black, no glow behind the text.
+	@media (prefers-contrast: more) {
+		background: #000;
+	}
+
+	// Less contrast: the glow and the ring go, it softens to charcoal.
+	@media (prefers-contrast: less) {
+		background: linear-gradient(135deg, #2c3036, #353a42);
+	}
+}

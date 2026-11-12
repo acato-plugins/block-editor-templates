@@ -1,0 +1,157 @@
+/**
+ * The walkthrough's steps (tour.js): core's wp-pointer, with a header in the banner's look over a
+ * body in the admin's own colours, so they read as this plugin's and not as core's blue pointer.
+ */
+
+@use "src/pointer-look" as look;
+
+.abet-pointer {
+
+	.wp-pointer-content {
+		overflow: hidden;
+		padding: 0;
+		border: 1px solid #dcdcde;
+		border-radius: 8px;
+		background: #fff;
+		box-shadow: 0 10px 28px -10px rgb(0 0 0 / 0.35), 0 1px 2px rgb(0 0 0 / 0.06);
+		color: #1d2327;
+
+		@media (prefers-contrast: more) {
+			border-width: 2px;
+		}
+
+		@media (forced-colors: active) {
+			border: 1px solid CanvasText;
+		}
+
+		// Core's blue title bar and its flag give way to the header.
+		h3 {
+			margin: 0;
+			padding-block: 2px 14px;
+			padding-inline: 0;
+			border: 0;
+			background: none;
+			color: #fff;
+			font-size: 15px;
+			font-weight: 600;
+			line-height: 1.4;
+
+			&::before {
+				content: none;
+			}
+		}
+
+		> p {
+			margin: 0;
+			padding-block: 14px 0;
+			padding-inline: 20px;
+			color: #3c434a;
+			font-size: 13px;
+			line-height: 1.6;
+		}
+	}
+
+	.abet-pointer-head {
+
+		@include look.banner;
+
+		padding-block: 14px 0;
+		padding-inline: 20px;
+	}
+
+	.wp-pointer-content .abet-pointer-eyebrow {
+		margin: 0;
+		padding: 0;
+		color: rgb(255 255 255 / 0.75);
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+
+		@media (prefers-contrast: more) {
+			color: #fff;
+		}
+	}
+
+	.wp-pointer-buttons {
+		margin-block-start: 16px;
+		padding-block: 12px;
+		padding-inline: 20px;
+		border-block-start: 1px solid #dcdcde;
+	}
+
+	// The arrow: dark where it touches the header, as most steps open below their target, the
+	// card's own surface and rule on the other sides.
+	&.wp-pointer-top {
+
+		.wp-pointer-arrow,
+		.wp-pointer-arrow-inner {
+			border-block-end-color: look.$arrow;
+		}
+	}
+
+	&.wp-pointer-left {
+
+		.wp-pointer-arrow {
+			border-inline-end-color: #dcdcde;
+		}
+
+		.wp-pointer-arrow-inner {
+			border-inline-end-color: #fff;
+		}
+	}
+
+	&.wp-pointer-right {
+
+		.wp-pointer-arrow {
+			border-inline-start-color: #dcdcde;
+		}
+
+		.wp-pointer-arrow-inner {
+			border-inline-start-color: #fff;
+		}
+	}
+}
+
+// How far along, as a line under the header: green into purple, the banner's two glows.
+.abet-pointer-progress {
+	display: block;
+	block-size: 3px;
+	margin-inline: -20px;
+	background: rgb(255 255 255 / 0.12);
+
+	span {
+		display: block;
+		inline-size: var(--abet-progress, 100%);
+		block-size: 100%;
+		background: linear-gradient(90deg, #3eaa78, #b45ac4);
+
+		@media (prefers-reduced-motion: no-preference) {
+			transition: inline-size 200ms ease;
+		}
+
+		@media (forced-colors: active) {
+			background: Highlight;
+			forced-color-adjust: none;
+		}
+	}
+}
+
+.abet-pointer-buttons {
+	display: flex;
+	gap: 0.75em;
+	align-items: center;
+	justify-content: flex-end;
+
+	// Skip is a quiet link, kept apart from Next. Core's .button-primary keeps the admin colour
+	// scheme's own colours.
+	.button-link {
+		margin-inline-end: auto;
+		color: #646970;
+		text-decoration: underline;
+
+		&:hover {
+			color: #1d2327;
+		}
+	}
+}
