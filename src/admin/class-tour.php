@@ -140,8 +140,9 @@ class Tour {
 			],
 		];
 
-		// Archive and special templates are for classic themes only; a block theme has its own.
-		if ( count( Admin::post_types() ) > 1 ) {
+		// Archive and special templates are for classic themes only: Admin::post_types() leaves them
+		// out under a block theme, which has templates of its own.
+		if ( array_key_exists( 'pt-arch-templates', Admin::post_types() ) ) {
 			$steps[] = [
 				'since'  => '1.0.0',
 				'target' => $menu . ' .wp-submenu a[href$="post_type=pt-arch-templates"], ' . $menu,
