@@ -1,9 +1,11 @@
 /**
  * The walkthrough of the Post Type Templates list, on WordPress's own admin pointers.
  *
- * The steps come from Admin\Tour. It starts by itself when there are steps this user has not seen,
- * which after an update are only the new ones, and can be taken again in full from the
- * "Take the walkthrough" button next to the screen's title.
+ * The steps come from Admin\Tour. It never starts on its own: it starts from the
+ * "Start walkthrough" link on the Plugins screen, which opens this screen with a query argument, or
+ * from the "Take the walkthrough" button next to the screen's title. From the Plugins screen,
+ * somebody who took an older walkthrough gets only the steps added since; the button always gives
+ * all of it.
  */
 
 /**
@@ -275,9 +277,19 @@ domReady(() => {
 		heading.after(' ', button);
 	}
 
-	// On the first visit, and after an update that added steps, only those. A screen with none of
-	// them on it counts as seen.
-	if (data.pending.length && !run(present(data.pending))) {
-		markSeen();
+	// Asked for from the Plugins screen. The argument comes off the address first, so a reload or
+	// a bookmark does not start it again.
+	const url = new URL(window.location.href);
+
+	if (url.searchParams.has(data.start)) {
+		url.searchParams.delete(data.start);
+		window.history.replaceState(window.history.state, '', url);
+
+		// What this user has not seen, or all of it when they saw everything.
+		const pending = present(data.pending);
+		const steps = pending.length ? pending : present(data.steps);
+
+		// Once the screen has settled, so the first step points at its place.
+		window.requestAnimationFrame(() => run(steps));
 	}
 });

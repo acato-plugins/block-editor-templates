@@ -9,7 +9,7 @@
 namespace Acato\Block_Editor_Templates\Admin;
 
 /**
- * Settings that switch the extra columns of the template list tables on or off.
+ * Settings that switch the extra columns of the template list tables, and the walkthrough, on or off.
  *
  * On a single site the settings live on Block Templates > Settings. On a multisite network a super
  * admin sets the network default on Network Admin > Settings > Block Editor Templates (only shown when
@@ -82,29 +82,49 @@ class Settings {
 	}
 
 	/**
-	 * The settings with their labels and descriptions, in display order.
+	 * The groups the settings are shown in, with their titles, in display order.
 	 *
-	 * @return array<string, array{label: string, description: string}>
+	 * @return array<string, string>
+	 */
+	public static function sections() {
+		return [
+			'lists'       => __( 'Template lists', 'block-editor-templates' ),
+			'walkthrough' => _x( 'Walkthrough', 'settings section', 'block-editor-templates' ),
+		];
+	}
+
+	/**
+	 * The settings with their labels, descriptions and sections, in display order.
+	 *
+	 * @return array<string, array{label: string, description: string, section: string}>
 	 */
 	public static function fields() {
 		return [
 			'preview'     => [
 				'label'       => __( 'Enable preview', 'block-editor-templates' ),
 				'description' => __( 'Show a thumbnail of each template’s blocks in the template lists.', 'block-editor-templates' ),
+				'section'     => 'lists',
 			],
 			'created_by'  => [
 				'label'       => __( 'Show the author under “Created”', 'block-editor-templates' ),
 				'description' => __( 'Show who created each template under its date, with an “All creators” filter.', 'block-editor-templates' ),
+				'section'     => 'lists',
 			],
 			'modified_by' => [
 				'label'       => __( 'Enable “Modified”', 'block-editor-templates' ),
 				'description' => __( 'Show when each template was last modified and by whom, with an “All modifiers” filter.', 'block-editor-templates' ),
+				'section'     => 'lists',
+			],
+			'walkthrough' => [
+				'label'       => _x( 'Offer the walkthrough', 'checkbox label', 'block-editor-templates' ),
+				'description' => _x( 'Adds a “Start walkthrough” link to the plugin on the Plugins screen, and a “Take the walkthrough” button to the Post Type Templates list. It never starts by itself.', 'field description', 'block-editor-templates' ),
+				'section'     => 'walkthrough',
 			],
 		];
 	}
 
 	/**
-	 * The values used before anyone saves the settings: every column on.
+	 * The values used before anyone saves the settings: every column, and the walkthrough, on.
 	 *
 	 * @return array<string, bool>
 	 */
@@ -337,11 +357,19 @@ class Settings {
 		foreach ( self::fields() as $key => $field ) {
 			$fields[] = [ 'key' => $key ] + $field;
 		}
+		$sections = [];
+		foreach ( self::sections() as $key => $title ) {
+			$sections[] = [
+				'key'   => $key,
+				'title' => $title,
+			];
+		}
 		wp_add_inline_script(
 			$handle,
 			'window.abetSettings = ' . wp_json_encode(
 				[
 					'option'        => self::OPTION,
+					'sections'      => $sections,
 					'fields'        => $fields,
 					'values'        => self::normalize( get_option( self::OPTION, [] ) ),
 					'networkValues' => is_multisite() ? self::network_values() : null,
@@ -418,20 +446,41 @@ class Settings {
 	}
 
 	/**
-	 * Render the checkbox rows.
+	 * Render the checkbox rows, one per section.
 	 *
 	 * @param array<string, bool> $values The values to show as checked.
 	 *
 	 * @return void
 	 */
 	private static function render_fields( $values ) {
+		foreach ( self::sections() as $section => $title ) {
+			self::render_section( $section, $title, $values );
+		}
+	}
+
+	/**
+	 * Render the checkboxes of one section as a row.
+	 *
+	 * @param string              $section The section key, see self::sections().
+	 * @param string              $title   The section title.
+	 * @param array<string, bool> $values  The values to show as checked.
+	 *
+	 * @return void
+	 */
+	private static function render_section( $section, $title, $values ) {
+		$fields = array_filter(
+			self::fields(),
+			static function ( $field ) use ( $section ) {
+				return $section === $field['section'];
+			}
+		);
 		?>
 		<tr>
-			<th scope="row"><?php esc_html_e( 'Template lists', 'block-editor-templates' ); ?></th>
+			<th scope="row"><?php echo esc_html( $title ); ?></th>
 			<td>
 				<fieldset>
-					<legend class="screen-reader-text"><?php esc_html_e( 'Template lists', 'block-editor-templates' ); ?></legend>
-					<?php foreach ( self::fields() as $key => $field ) : ?>
+					<legend class="screen-reader-text"><?php echo esc_html( $title ); ?></legend>
+					<?php foreach ( $fields as $key => $field ) : ?>
 						<?php $id = 'abet-setting-' . $key; ?>
 						<p>
 							<label for="<?php echo esc_attr( $id ); ?>">

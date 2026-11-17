@@ -5,10 +5,10 @@
     "author": "Acato",
     "main": "build/index.js",
     "scripts": {
-        "build": "wp-scripts build src/admin/assets/admin.js src/admin/assets/list-preview.js src/admin/assets/settings.js src/admin/assets/tour.js src/admin/assets/menu-pointer.js",
+        "build": "wp-scripts build src/admin/assets/admin.js src/admin/assets/list-preview.js src/admin/assets/settings.js src/admin/assets/tour.js",
         "format:js": "wp-scripts format-js",
         "lint:js": "wp-scripts lint-js",
-        "start": "wp-scripts start src/admin/assets/admin.js src/admin/assets/list-preview.js src/admin/assets/settings.js src/admin/assets/tour.js src/admin/assets/menu-pointer.js",
+        "start": "wp-scripts start src/admin/assets/admin.js src/admin/assets/list-preview.js src/admin/assets/settings.js src/admin/assets/tour.js",
         "packages-update": "wp-scripts packages-update"
     },
     "devDependencies": {

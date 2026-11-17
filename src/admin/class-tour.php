@@ -1,6 +1,6 @@
 <?php
 /**
- * A short walkthrough of the template list, shown again when it grows.
+ * A short walkthrough of the template list, taken when somebody asks for it.
  *
  * @package    Acato\Block_Editor_Templates
  * @subpackage Acato\Block_Editor_Templates\Admin
@@ -18,9 +18,11 @@ namespace Acato\Block_Editor_Templates\Admin;
  * that adds steps (with a newer `since`) and bumps self::VERSION, somebody who took an older one gets
  * only the new steps, so it reads as what changed.
  *
- * Until then a card beside the Block Templates menu says there is something to see, on every admin
- * screen but the plugin's own, until it is taken or put off with "Not now". It has the plugin's own
- * look, the banner's dark glow and its Wapuu, so it reads as this plugin's and not as one of core's.
+ * It never starts by itself. It is started from the "Start walkthrough" link on the Plugins screen,
+ * tagged "New" while this user has steps they have not seen, or from the "Take the walkthrough"
+ * button next to the list's title. A site, or the network default, can switch it off in
+ * Block Templates > Settings, and code can with the `abet_walkthrough` filter or the
+ * ABET_DISABLE_WALKTHROUGH constant; then neither the link nor the button shows.
  *
  * @package    Acato\Block_Editor_Templates
  * @subpackage Acato\Block_Editor_Templates\Admin
@@ -55,14 +57,14 @@ class Tour {
 	const SCREEN = 'edit-block-templates';
 
 	/**
-	 * The build entries: the walkthrough itself, and the card beside the menu.
+	 * The build entry of the walkthrough.
 	 */
 	const ENTRY = 'tour';
 
 	/**
-	 * The build entry of the card beside the menu.
+	 * Query argument on the list's URL that starts the walkthrough.
 	 */
-	const POINTER_ENTRY = 'menu-pointer';
+	const START_ARG = 'abet-walkthrough';
 
 	/**
 	 * The singleton instance of this class.
@@ -88,8 +90,9 @@ class Tour {
 	 * Register the hooks.
 	 */
 	private function __construct() {
+		add_filter( 'plugin_action_links_' . plugin_basename( ABET_ABSPATH . 'block-editor-templates.php' ), [ self::class, 'add_action_link' ] );
 		add_action( 'admin_enqueue_scripts', [ self::class, 'enqueue' ] );
-		add_action( 'admin_enqueue_scripts', [ self::class, 'menu_pointer' ] );
+		add_action( 'admin_enqueue_scripts', [ self::class, 'tag_style' ] );
 		add_action( 'wp_ajax_' . self::ACTION, [ self::class, 'mark_seen' ] );
 	}
 
@@ -175,12 +178,34 @@ class Tour {
 	}
 
 	/**
+	 * Whether the walkthrough is offered at all on the current site.
+	 *
+	 * The setting follows the network default like the others, unless the site uses its own. Code has
+	 * the last word: the ABET_DISABLE_WALKTHROUGH constant switches it off everywhere, and the
+	 * `abet_walkthrough` filter decides per site.
+	 *
+	 * @return bool
+	 */
+	public static function is_enabled() {
+		if ( defined( 'ABET_DISABLE_WALKTHROUGH' ) && ABET_DISABLE_WALKTHROUGH ) {
+			return false;
+		}
+
+		/**
+		 * Whether the walkthrough of the template list is offered.
+		 *
+		 * @param bool $enabled Whether the settings switch it on.
+		 */
+		return (bool) apply_filters( 'abet_walkthrough', Settings::enabled( 'walkthrough' ) );
+	}
+
+	/**
 	 * Whether the current user manages the templates and has steps they have not seen yet.
 	 *
 	 * @return bool
 	 */
 	public static function is_pending() {
-		if ( ! current_user_can( self::CAPABILITY ) ) {
+		if ( ! current_user_can( self::CAPABILITY ) || ! self::is_enabled() ) {
 			return false;
 		}
 
@@ -212,23 +237,6 @@ class Tour {
 	}
 
 	/**
-	 * Whether the current screen is one of the plugin's own: a template list or editor, or Settings.
-	 *
-	 * @param string $hook_suffix The current admin page.
-	 *
-	 * @return bool
-	 */
-	private static function is_plugin_screen( $hook_suffix ) {
-		$screen = get_current_screen();
-
-		if ( $screen && array_key_exists( (string) $screen->post_type, Admin::post_types() ) ) {
-			return true;
-		}
-
-		return is_string( $hook_suffix ) && false !== strpos( $hook_suffix, Settings::PAGE );
-	}
-
-	/**
 	 * Load the walkthrough on the Post Type Templates list, for those who manage the templates.
 	 *
 	 * @return void
@@ -236,7 +244,7 @@ class Tour {
 	public static function enqueue() {
 		$screen = get_current_screen();
 
-		if ( ! $screen || self::SCREEN !== $screen->id || ! current_user_can( self::CAPABILITY ) || ! file_exists( ABET_ABSPATH . ABET_ASSETS_DIR . self::ENTRY . '.js' ) ) {
+		if ( ! $screen || self::SCREEN !== $screen->id || ! current_user_can( self::CAPABILITY ) || ! self::is_enabled() || ! file_exists( ABET_ABSPATH . ABET_ASSETS_DIR . self::ENTRY . '.js' ) ) {
 			return;
 		}
 
@@ -256,6 +264,7 @@ class Tour {
 				[
 					'steps'   => self::steps(),
 					'pending' => self::is_pending() ? self::steps_since( self::seen() ) : [],
+					'start'   => self::START_ARG,
 					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 					'action'  => self::ACTION,
 					'nonce'   => wp_create_nonce( self::ACTION ),
@@ -267,60 +276,56 @@ class Tour {
 	}
 
 	/**
-	 * Core's name for this version's menu card, dismissed per user through core's own
-	 * `dismiss-wp-pointer`, so a newer walkthrough brings the card back.
+	 * The "Start walkthrough" link on the plugin's row of the Plugins screen, tagged "New" while this
+	 * user has steps they have not seen.
 	 *
-	 * @return string
+	 * The plugin has no Settings link of its own there, so this one goes first, where such a link
+	 * would be.
+	 *
+	 * @param mixed $links Action links of the plugin's row.
+	 *
+	 * @return mixed
 	 */
-	private static function pointer_name() {
-		return 'abet_tour_' . str_replace( '.', '_', self::VERSION );
+	public static function add_action_link( $links ) {
+		if ( ! is_array( $links ) || ! current_user_can( self::CAPABILITY ) || ! self::is_enabled() ) {
+			return $links;
+		}
+
+		$tag = self::is_pending()
+			? ' <span class="abet-walkthrough-tag">' . esc_html_x( 'New', 'walkthrough tag on the Plugins screen', 'block-editor-templates' ) . '</span>'
+			: '';
+
+		array_unshift(
+			$links,
+			sprintf(
+				'<a href="%s">%s</a>%s',
+				esc_url( add_query_arg( self::START_ARG, '1', admin_url( 'edit.php?post_type=block-templates' ) ) ),
+				esc_html_x( 'Start walkthrough', 'plugin action link', 'block-editor-templates' ),
+				$tag
+			)
+		);
+
+		return $links;
 	}
 
 	/**
-	 * The card beside the Block Templates menu, on every other admin screen, until the walkthrough is
-	 * taken or put off.
+	 * The look of the "New" tag, on the Plugins screen only, while it shows.
 	 *
 	 * @param string $hook_suffix The current admin page.
 	 *
 	 * @return void
 	 */
-	public static function menu_pointer( $hook_suffix ) {
-		if ( is_network_admin() || self::is_plugin_screen( $hook_suffix ) || ! self::is_pending() || ! file_exists( ABET_ABSPATH . ABET_ASSETS_DIR . self::POINTER_ENTRY . '.js' ) ) {
+	public static function tag_style( $hook_suffix ) {
+		if ( 'plugins.php' !== $hook_suffix || is_network_admin() || ! self::is_pending() ) {
 			return;
 		}
 
-		$dismissed = explode( ',', (string) get_user_meta( get_current_user_id(), 'dismissed_wp_pointers', true ) );
-		if ( in_array( self::pointer_name(), $dismissed, true ) ) {
-			return;
-		}
-
-		$asset  = Admin::script_asset( self::POINTER_ENTRY );
-		$handle = 'block-editor-templates-' . self::POINTER_ENTRY;
-		$first  = '' === self::seen();
-
-		if ( file_exists( ABET_ABSPATH . ABET_ASSETS_DIR . self::POINTER_ENTRY . '.css' ) ) {
-			wp_enqueue_style( $handle, ABET_ASSETS_URL . self::POINTER_ENTRY . '.css', [], $asset['version'] ?? ABET_VERSION );
-		}
-
-		wp_enqueue_script( $handle, ABET_ASSETS_URL . self::POINTER_ENTRY . '.js', $asset['dependencies'] ?? [], $asset['version'] ?? ABET_VERSION, true );
-		wp_add_inline_script(
-			$handle,
-			'window.abetMenuPointer = ' . wp_json_encode(
-				[
-					'name'     => self::pointer_name(),
-					'title'    => __( 'Block Editor Templates', 'block-editor-templates' ),
-					'text'     => $first
-						? _x( 'Let every new post start with the blocks it needs. A short walkthrough shows you around the templates.', 'walkthrough pointer', 'block-editor-templates' )
-						: _x( 'Block Editor Templates has changed. A short walkthrough shows what is new.', 'walkthrough pointer', 'block-editor-templates' ),
-					'link'     => admin_url( 'edit.php?post_type=block-templates' ),
-					'linkText' => _x( 'Take the walkthrough', 'walkthrough pointer', 'block-editor-templates' ),
-					'dismiss'  => _x( 'Not now', 'walkthrough pointer', 'block-editor-templates' ),
-					'wapuu'    => plugins_url( 'assets/images/wapuu.png', __FILE__ ),
-					'ajaxUrl'  => admin_url( 'admin-ajax.php' ),
-				],
-				JSON_HEX_TAG | JSON_UNESCAPED_SLASHES
-			) . ';',
-			'before'
+		// Shaped like core's update count bubbles, in core's red, white on it.
+		wp_register_style( 'block-editor-templates-walkthrough-tag', false, [], ABET_VERSION );
+		wp_enqueue_style( 'block-editor-templates-walkthrough-tag' );
+		wp_add_inline_style(
+			'block-editor-templates-walkthrough-tag',
+			'.abet-walkthrough-tag{display:inline-block;margin-inline-start:4px;padding:0 6px;border-radius:9px;background:#d63638;color:#fff;font-size:9px;font-weight:600;line-height:17px;text-transform:uppercase;vertical-align:text-top}@media (forced-colors:active){.abet-walkthrough-tag{border:1px solid CanvasText}}'
 		);
 	}
 
@@ -342,41 +347,51 @@ class Tour {
 	}
 
 	/**
-	 * Forget the walkthrough for every user: the version they saw, and the invite cards they put
-	 * off, which core keeps in its own list of dismissed pointers next to those of other plugins.
+	 * Forget the walkthrough: the version every user saw, and its switch in the settings of every site
+	 * and in the network default. The other settings stay.
 	 *
-	 * User meta is shared by all sites of a network, so this runs once, not per site.
+	 * User meta is shared by all sites of a network, so that goes once, not per site.
 	 *
 	 * @return void
 	 */
 	public static function uninstall() {
 		delete_metadata( 'user', 0, self::USER_META, '', true );
 
-		$user_ids = get_users(
+		if ( ! is_multisite() ) {
+			self::forget_setting();
+
+			return;
+		}
+
+		$network = get_site_option( Settings::OPTION );
+		if ( is_array( $network ) && array_key_exists( 'walkthrough', $network ) ) {
+			unset( $network['walkthrough'] );
+			update_site_option( Settings::OPTION, $network );
+		}
+
+		foreach ( get_sites(
 			[
-				'blog_id'    => 0,
-				'fields'     => 'ID',
-				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Once, on uninstall.
-				'meta_query' => [
-					[
-						'key'     => 'dismissed_wp_pointers',
-						'value'   => 'abet_tour_',
-						'compare' => 'LIKE',
-					],
-				],
+				'fields' => 'ids',
+				'number' => 0,
 			]
-		);
+		) as $site_id ) {
+			switch_to_blog( (int) $site_id );
+			self::forget_setting();
+			restore_current_blog();
+		}
+	}
 
-		foreach ( $user_ids as $user_id ) {
-			$dismissed = explode( ',', (string) get_user_meta( (int) $user_id, 'dismissed_wp_pointers', true ) );
-			$kept      = array_filter(
-				$dismissed,
-				static function ( $name ) {
-					return 0 !== strpos( $name, 'abet_tour_' );
-				}
-			);
+	/**
+	 * Remove the walkthrough's switch from the current site's settings.
+	 *
+	 * @return void
+	 */
+	private static function forget_setting() {
+		$values = get_option( Settings::OPTION );
 
-			update_user_meta( (int) $user_id, 'dismissed_wp_pointers', implode( ',', $kept ) );
+		if ( is_array( $values ) && array_key_exists( 'walkthrough', $values ) ) {
+			unset( $values['walkthrough'] );
+			update_option( Settings::OPTION, $values );
 		}
 	}
 }
