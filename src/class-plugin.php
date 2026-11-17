@@ -13,6 +13,7 @@ namespace Acato\Block_Editor_Templates;
 use Acato\Block_Editor_Templates\Admin\Admin;
 use Acato\Block_Editor_Templates\Admin\List_Table;
 use Acato\Block_Editor_Templates\Admin\Settings;
+use Acato\Block_Editor_Templates\Admin\Tour;
 
 
 /**
@@ -37,6 +38,7 @@ class Plugin {
 		Admin::get_instance();
 		Settings::get_instance();
 		List_Table::get_instance();
+		Tour::get_instance();
 	}
 
 	/**
