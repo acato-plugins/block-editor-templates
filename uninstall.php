@@ -13,5 +13,7 @@ defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 // The plugin's autoloader is not loaded on uninstall.
 require_once __DIR__ . '/src/admin/class-settings.php';
 require_once __DIR__ . '/src/admin/class-tour.php';
+require_once __DIR__ . '/src/class-upgrade.php';
 
 \Acato\Block_Editor_Templates\Admin\Tour::uninstall();
+\Acato\Block_Editor_Templates\Upgrade::uninstall();

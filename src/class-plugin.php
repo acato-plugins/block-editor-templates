@@ -35,6 +35,7 @@ class Plugin {
 	public function __construct() {
 		$this->define_constants();
 
+		Upgrade::get_instance();
 		Admin::get_instance();
 		Settings::get_instance();
 		List_Table::get_instance();

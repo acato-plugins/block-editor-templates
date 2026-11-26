@@ -74,6 +74,16 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 
 == Changelog ==
 
+= 1.3.0 =
+Release Date: unreleased
+
+Performance (BET-1): The plugin no longer checks on every request, front end included, that a template exists for every post type, taxonomy and special page. It checks in the admin only, and only when one of those, the theme type or the plugin version changed, or a template was changed or deleted. Two admin requests at the same time can no longer create the same template twice. This removes about 35 database queries from every page view.
+Performance (BET-2): The block templates of the post types are built only for the block editor and the post types REST endpoint it asks, not on every request.
+Performance (BET-3): Which archive and 404 template applies is remembered until a template changes, instead of being looked up on every archive and 404 page view.
+Fix: After a template was unpublished or deleted, a site with a persistent object cache could keep using it, or create its template again, for up to an hour.
+Chore: A database version per network (per site on a single site), so data stored by an older version is brought up to date once, for every site of the network, before the new code uses it.
+Chore: Builds with Node 26.
+
 = 1.2.0 =
 Release Date: November 10th, 2026
 
