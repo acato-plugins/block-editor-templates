@@ -58,6 +58,12 @@ You can read more about the distinction between these types of themes in [the Wo
 
 Give the block a `{base}Placeholder` attribute (e.g. `content` → `contentPlaceholder`) of the same type as the content attribute, and render it as the placeholder in the block's edit component. The plugin then automatically adds a "Use content as placeholder" toggle to that block; you do not add the `textAsPlaceholder` attribute yourself. See `docs/placeholder-support.md` for a full walkthrough.
 
+= Is there a walkthrough? =
+
+Yes. A short walkthrough shows you around the Post Type Templates list: the templates, publishing, Prefill new posts, the Preview, Created and Modified columns, the archive and special templates (classic themes only) and Settings. It never starts by itself. Start it from the **Start walkthrough** link of the plugin on the Plugins screen, tagged **New** while there is something you have not seen, or from the **Take the walkthrough** button next to the title of the Post Type Templates list. After an update that adds to the walkthrough, the link on the Plugins screen shows only what is new.
+
+Don't want it? Switch off **Offer the walkthrough** under Block Templates > Settings, for a site or, on a multisite network, for every site that follows the network settings, and the link and the button go. In code, `define( 'ABET_DISABLE_WALKTHROUGH', true );` or the `abet_walkthrough` filter does the same.
+
 = I found a typo, or a translation that doesn't read well. What should I do? =
 
 Please tell us, we'd like to fix it. Small wording mistakes are easy to miss, and we would much rather hear about them than leave them in. For the English source text, open a topic on [the support forum](https://wordpress.org/support/plugin/block-editor-templates/) or an issue on [GitHub](https://github.com/acato-plugins/block-editor-templates/issues), and mention where you saw the text. Translations are maintained by the WordPress polyglots teams on [translate.wordpress.org](https://translate.wordpress.org/projects/wp-plugins/block-editor-templates/), where you can suggest a better phrasing in your own language directly.

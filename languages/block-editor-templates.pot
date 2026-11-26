@@ -2,20 +2,22 @@
 # This file is distributed under the GPLv3.
 msgid ""
 msgstr ""
-"Project-Id-Version: Block Editor Templates 1.0.7\n"
+"Project-Id-Version: Block Editor Templates 1.2.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/block-editor-templates\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-07-14T10:06:23+00:00\n"
+"POT-Creation-Date: 2026-11-17T18:29:06+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: block-editor-templates\n"
 
 #. Plugin Name of the plugin
 #: block-editor-templates.php
+#: src/admin/class-settings.php:281
+#: src/admin/class-settings.php:282
 msgid "Block Editor Templates"
 msgstr ""
 
@@ -35,240 +37,521 @@ msgstr ""
 msgid "Acato"
 msgstr ""
 
-#: src/admin/class-admin.php:111
+#: src/admin/class-admin.php:147
 msgctxt "posttype single name global used"
 msgid "Post Type Template"
 msgstr ""
 
-#: src/admin/class-admin.php:112
+#: src/admin/class-admin.php:148
 msgctxt "posttype plural name global used"
 msgid "Post Type Templates"
 msgstr ""
 
-#: src/admin/class-admin.php:113
+#: src/admin/class-admin.php:149
 msgctxt "posttype description"
 msgid "Templates that are applied to each new post of the matching post type."
 msgstr ""
 
-#: src/admin/class-admin.php:120
+#: src/admin/class-admin.php:156
 msgctxt "posttype single name global used"
 msgid "Post Type Archive Template"
 msgstr ""
 
-#: src/admin/class-admin.php:121
+#: src/admin/class-admin.php:157
 msgctxt "posttype plural name global used"
 msgid "Post Type Archive Templates"
 msgstr ""
 
-#: src/admin/class-admin.php:122
+#: src/admin/class-admin.php:158
 msgctxt "posttype description"
 msgid "Templates that render the archive page of the matching post type."
 msgstr ""
 
-#: src/admin/class-admin.php:129
+#: src/admin/class-admin.php:165
 msgctxt "posttype single name global used"
 msgid "Taxonomy Archive Template"
 msgstr ""
 
-#: src/admin/class-admin.php:130
+#: src/admin/class-admin.php:166
 msgctxt "posttype plural name global used"
 msgid "Taxonomy Archive Templates"
 msgstr ""
 
-#: src/admin/class-admin.php:131
+#: src/admin/class-admin.php:167
 msgctxt "posttype description"
 msgid "Templates that render the archive page of the matching taxonomy."
 msgstr ""
 
-#: src/admin/class-admin.php:138
+#: src/admin/class-admin.php:174
 msgctxt "posttype single name global used"
 msgid "Special Template"
 msgstr ""
 
-#: src/admin/class-admin.php:139
+#: src/admin/class-admin.php:175
 msgctxt "posttype plural name global used"
 msgid "Special Templates"
 msgstr ""
 
-#: src/admin/class-admin.php:140
+#: src/admin/class-admin.php:176
 msgctxt "posttype description"
 msgid "Templates for special pages, such as the 404 page."
 msgstr ""
 
 #. translators: %d: number of templates moved to the trash.
-#: src/admin/class-admin.php:558
+#: src/admin/class-admin.php:677
 #, php-format
 msgid "%d template moved to the trash."
 msgid_plural "%d templates moved to the trash."
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/admin/class-admin.php:577
+#: src/admin/class-admin.php:696
 msgid "These Post Type Templates exist for post types that no longer use the block editor. You can move them to the trash:"
 msgstr ""
 
-#: src/admin/class-admin.php:590
+#: src/admin/class-admin.php:709
 msgid "Move all to Trash"
 msgstr ""
 
 #. translators: %s: template title.
-#: src/admin/class-admin.php:603
+#: src/admin/class-admin.php:722
 #, php-format
 msgid "The Post Type Template “%s” exists for a post type that no longer uses the block editor."
 msgstr ""
 
 #. translators: %d: template post ID.
-#: src/admin/class-admin.php:625
+#: src/admin/class-admin.php:744
 #, php-format
 msgid "Template #%d"
 msgstr ""
 
-#: src/admin/class-admin.php:655
+#: src/admin/class-admin.php:774
 msgid "Move to Trash"
 msgstr ""
 
-#: src/admin/class-admin.php:669
+#: src/admin/class-admin.php:788
 msgid "You are not allowed to trash this template."
 msgstr ""
 
-#: src/admin/class-admin.php:804
-#: src/admin/class-admin.php:883
+#: src/admin/class-admin.php:923
+#: src/admin/class-admin.php:1002
 msgid "_General Template"
 msgstr ""
 
-#: src/admin/class-admin.php:937
+#: src/admin/class-admin.php:1056
 msgid "404 page"
 msgstr ""
 
-#: src/admin/class-admin.php:1008
+#: src/admin/class-admin.php:1127
 msgid "View"
 msgstr ""
 
-#: src/admin/class-admin.php:1031
+#: src/admin/class-admin.php:1150
 msgid "Add New"
 msgstr ""
 
 #. translators: %s: CPT name
-#: src/admin/class-admin.php:1033
+#: src/admin/class-admin.php:1152
 #, php-format
 msgid "Add New %s"
 msgstr ""
 
 #. translators: %s: CPT name
-#: src/admin/class-admin.php:1035
+#: src/admin/class-admin.php:1154
 #, php-format
 msgid "Edit %s"
 msgstr ""
 
 #. translators: %s: CPT name
-#: src/admin/class-admin.php:1037
+#: src/admin/class-admin.php:1156
 #, php-format
 msgid "New %s"
 msgstr ""
 
 #. translators: %s: CPT name
-#: src/admin/class-admin.php:1039
+#: src/admin/class-admin.php:1158
 #, php-format
 msgid "All %s"
 msgstr ""
 
 #. translators: %s: CPT name
-#: src/admin/class-admin.php:1041
+#: src/admin/class-admin.php:1160
 #, php-format
 msgid "View %s"
 msgstr ""
 
 #. translators: %s: CPT name
-#: src/admin/class-admin.php:1043
+#: src/admin/class-admin.php:1162
 #, php-format
 msgid "Search %s"
 msgstr ""
 
 #. translators: %s: CPT name
-#: src/admin/class-admin.php:1045
+#: src/admin/class-admin.php:1164
 #, php-format
 msgid "No %s found"
 msgstr ""
 
 #. translators: %s: CPT name
-#: src/admin/class-admin.php:1047
+#: src/admin/class-admin.php:1166
 #, php-format
 msgid "No %s found in trash"
 msgstr ""
 
-#: src/admin/class-admin.php:1240
+#: src/admin/class-admin.php:1359
 msgid "Item is deleted"
 msgstr ""
 
-#: src/admin/class-admin.php:1257
-#: src/admin/assets/src/default-content-panel.js:50
+#: src/admin/class-admin.php:1376
+#: src/admin/assets/src/default-content-panel.js:53
 msgid "When enabled, new posts of this post type start with this template’s blocks and the content entered in them. When disabled, new posts get only the empty block structure. Only applies when creating a post in the WordPress admin."
 msgstr ""
 
-#: src/admin/class-admin.php:1263
+#: src/admin/class-admin.php:1384
 msgid "Prefill new posts"
 msgstr ""
 
-#: src/admin/class-admin.php:1289
+#: src/admin/class-admin.php:1385
+msgid "About “Prefill new posts”"
+msgstr ""
+
+#: src/admin/class-admin.php:1425
 msgid "Prefill enabled"
 msgstr ""
 
-#: src/admin/class-admin.php:1291
+#: src/admin/class-admin.php:1427
 msgid "Prefill disabled"
 msgstr ""
 
-#: src/admin/assets/src/abet-filters.js:240
+#: src/admin/class-list-table.php:151
+msgid "Modified"
+msgstr ""
+
+#: src/admin/class-list-table.php:156
+msgid "Preview"
+msgstr ""
+
+#: src/admin/class-list-table.php:160
+msgid "Created"
+msgstr ""
+
+#: src/admin/class-list-table.php:257
+msgid "No blocks yet"
+msgstr ""
+
+#. translators: %s: template title.
+#: src/admin/class-list-table.php:271
+#, php-format
+msgid "Preview of “%s”, opens the editor"
+msgstr ""
+
+#. translators: %s: user name.
+#: src/admin/class-list-table.php:310
+#, php-format
+msgid "by %s"
+msgstr ""
+
+#: src/admin/class-list-table.php:339
+msgid "Filter by creator"
+msgstr ""
+
+#: src/admin/class-list-table.php:340
+msgid "All creators"
+msgstr ""
+
+#: src/admin/class-list-table.php:350
+msgid "Filter by modifier"
+msgstr ""
+
+#: src/admin/class-list-table.php:351
+msgid "All modifiers"
+msgstr ""
+
+#: src/admin/class-settings.php:91
+msgid "Template lists"
+msgstr ""
+
+#: src/admin/class-settings.php:92
+msgctxt "settings section"
+msgid "Walkthrough"
+msgstr ""
+
+#: src/admin/class-settings.php:104
+msgid "Enable preview"
+msgstr ""
+
+#: src/admin/class-settings.php:105
+msgid "Show a thumbnail of each template’s blocks in the template lists."
+msgstr ""
+
+#: src/admin/class-settings.php:109
+msgid "Show the author under “Created”"
+msgstr ""
+
+#: src/admin/class-settings.php:110
+msgid "Show who created each template under its date, with an “All creators” filter."
+msgstr ""
+
+#: src/admin/class-settings.php:114
+msgid "Enable “Modified”"
+msgstr ""
+
+#: src/admin/class-settings.php:115
+msgid "Show when each template was last modified and by whom, with an “All modifiers” filter."
+msgstr ""
+
+#: src/admin/class-settings.php:119
+msgctxt "checkbox label"
+msgid "Offer the walkthrough"
+msgstr ""
+
+#: src/admin/class-settings.php:120
+msgctxt "field description"
+msgid "Adds a “Start walkthrough” link to the plugin on the Plugins screen, and a “Take the walkthrough” button to the Post Type Templates list. It never starts by itself."
+msgstr ""
+
+#: src/admin/class-settings.php:265
+msgid "Block Templates settings"
+msgstr ""
+
+#: src/admin/class-settings.php:266
+msgid "Settings"
+msgstr ""
+
+#: src/admin/class-settings.php:311
+#: src/admin/class-settings.php:314
+msgid "Settings for this site"
+msgstr ""
+
+#: src/admin/class-settings.php:317
+#: src/admin/assets/settings.js:165
+msgid "Use the network settings"
+msgstr ""
+
+#: src/admin/class-settings.php:323
+msgid "Use the settings below for this site"
+msgstr ""
+
+#: src/admin/class-settings.php:406
+#: src/admin/assets/settings.js:119
+msgid "Settings saved."
+msgstr ""
+
+#: src/admin/class-settings.php:408
+msgid "The default for every site in the network. A site administrator can choose to use different settings for their own site."
+msgstr ""
+
+#: src/admin/class-settings.php:429
+msgid "Sorry, you are not allowed to manage options for this network."
+msgstr ""
+
+#. translators: 1: setting label, 2: "on" or "off".
+#: src/admin/class-settings.php:511
+#, php-format
+msgid "%1$s: %2$s"
+msgstr ""
+
+#: src/admin/class-settings.php:513
+msgid "off"
+msgstr ""
+
+#: src/admin/class-settings.php:513
+msgid "on"
+msgstr ""
+
+#. translators: %s: list of settings with their state.
+#: src/admin/class-settings.php:518
+#, php-format
+msgid "Currently: %s."
+msgstr ""
+
+#: src/admin/class-tour.php:115
+msgctxt "walkthrough step title"
+msgid "A template for every post type"
+msgstr ""
+
+#: src/admin/class-tour.php:116
+msgctxt "walkthrough step"
+msgid "Every post type that uses the block editor gets a template here by itself. Open one and add the blocks that every new post of that type should start with."
+msgstr ""
+
+#: src/admin/class-tour.php:121
+msgctxt "walkthrough step title"
+msgid "Published means active"
+msgstr ""
+
+#: src/admin/class-tour.php:122
+msgctxt "walkthrough step"
+msgid "A template starts as a draft and is only used once it is published. Switch it back to draft, or move it to the trash, to stop using it."
+msgstr ""
+
+#: src/admin/class-tour.php:127
+msgctxt "walkthrough step title"
+msgid "Prefill new posts"
+msgstr ""
+
+#: src/admin/class-tour.php:128
+msgctxt "walkthrough step"
+msgid "On: new posts start with the template’s blocks and the content entered in them. Off: they get only the empty block structure. Set it per template, in the editor’s sidebar."
+msgstr ""
+
+#: src/admin/class-tour.php:134
+msgctxt "walkthrough step title"
+msgid "Preview"
+msgstr ""
+
+#: src/admin/class-tour.php:135
+msgctxt "walkthrough step"
+msgid "A thumbnail of each template’s blocks. Select it to open the template in the editor."
+msgstr ""
+
+#: src/admin/class-tour.php:140
+msgctxt "walkthrough step title"
+msgid "Who changed what"
+msgstr ""
+
+#: src/admin/class-tour.php:141
+msgctxt "walkthrough step"
+msgid "Created and Modified show when and by whom. Select a name to list only the templates that person created or changed; the filters above the list do the same."
+msgstr ""
+
+#: src/admin/class-tour.php:152
+msgctxt "walkthrough step title"
+msgid "Archives and special pages"
+msgstr ""
+
+#: src/admin/class-tour.php:153
+msgctxt "walkthrough step"
+msgid "Your theme is a classic theme, so you can also give the archive pages of post types and taxonomies content of their own, and special pages such as the 404 page."
+msgstr ""
+
+#: src/admin/class-tour.php:162
+msgctxt "walkthrough step title"
+msgid "Settings"
+msgstr ""
+
+#: src/admin/class-tour.php:163
+msgctxt "walkthrough step"
+msgid "Switch the Preview, the author under Created, and the Modified column on or off for the template lists."
+msgstr ""
+
+#: src/admin/class-tour.php:295
+msgctxt "walkthrough tag on the Plugins screen"
+msgid "New"
+msgstr ""
+
+#: src/admin/class-tour.php:303
+msgctxt "plugin action link"
+msgid "Start walkthrough"
+msgstr ""
+
+#: src/admin/assets/settings.js:129
+msgid "The settings could not be saved. Please try again."
+msgstr ""
+
+#: src/admin/assets/settings.js:144
+msgid "Choose which extra columns the template lists show. They appear on the Post Type, Post Type Archive, Taxonomy Archive and Special Templates lists."
+msgstr ""
+
+#: src/admin/assets/settings.js:171
+msgid "This site follows the defaults a network administrator sets. The switches below show them."
+msgstr ""
+
+#: src/admin/assets/settings.js:175
+msgid "This site uses its own settings below."
+msgstr ""
+
+#: src/admin/assets/settings.js:229
+msgid "Saving…"
+msgstr ""
+
+#: src/admin/assets/settings.js:230
+msgid "Save changes"
+msgstr ""
+
+#: src/admin/assets/src/abet-filters.js:293
 msgid "Placeholder options"
 msgstr ""
 
 #. translators: 1: placeholder attribute name, 2: expected base attribute name.
-#: src/admin/assets/src/abet-filters.js:257
+#: src/admin/assets/src/abet-filters.js:310
 #, js-format
 msgid "“%1$s” is set, but its matching attribute “%2$s” does not exist on this block, so it cannot be used as a placeholder."
 msgstr ""
 
 #. translators: 1: suggested placeholder attribute name (e.g. "contentPlaceholder"), 2: existing base attribute name (e.g. "content").
-#: src/admin/assets/src/abet-filters.js:267
+#: src/admin/assets/src/abet-filters.js:320
 #, js-format
 msgid "Did you mean “%1$s”? This block has a matching “%2$s” attribute."
 msgstr ""
 
 #. translators: %s: comma-separated list of suggested placeholder attribute names.
-#: src/admin/assets/src/abet-filters.js:278
+#: src/admin/assets/src/abet-filters.js:331
 #, js-format
 msgid "Did you perhaps mean one of: %s?"
 msgstr ""
 
 #. translators: 1: placeholder attribute name, 2: placeholder data-type, 3: base attribute name, 4: base data-type.
-#: src/admin/assets/src/abet-filters.js:305
+#: src/admin/assets/src/abet-filters.js:358
 #, js-format
 msgid "Type mismatch: “%1$s” (%2$s) must be the same data-type as “%3$s” (%4$s)."
 msgstr ""
 
-#: src/admin/assets/src/abet-filters.js:325
+#: src/admin/assets/src/abet-filters.js:378
 msgid "Use content as placeholder"
 msgstr ""
 
-#: src/admin/assets/src/abet-filters.js:331
+#: src/admin/assets/src/abet-filters.js:384
 msgid "Inherited from a parent block: this block’s content is already used as placeholder text."
 msgstr ""
 
-#: src/admin/assets/src/abet-filters.js:335
+#: src/admin/assets/src/abet-filters.js:388
 msgid "When on, the text you typed is moved into this block’s placeholder attribute and shown as a greyed-out hint. New posts created from this template start with that hint instead of real content. Turn it off to move the text back."
 msgstr ""
 
-#: src/admin/assets/src/abet-filters.js:347
+#: src/admin/assets/src/abet-filters.js:400
 msgid "This block has no valid placeholder attributes to toggle."
 msgstr ""
 
-#: src/admin/assets/src/abet-filters.js:410
+#: src/admin/assets/src/abet-filters.js:463
 msgid "Used as placeholder"
 msgstr ""
 
-#: src/admin/assets/src/default-content-panel.js:43
+#: src/admin/assets/src/default-content-panel.js:46
 msgid "Post Type Template"
 msgstr ""
 
-#: src/admin/assets/src/default-content-panel.js:46
+#: src/admin/assets/src/default-content-panel.js:49
 msgid "Prefill new posts with this template"
+msgstr ""
+
+#: src/admin/assets/src/default-content-panel.js:89
+msgid "Prefill is enabled: new posts of this post type will start with this template’s blocks and the content entered in them."
+msgstr ""
+
+#. translators: 1: number of this step, 2: number of steps.
+#: src/admin/assets/tour.js:167
+#, js-format
+msgctxt "walkthrough progress"
+msgid "Step %1$d of %2$d"
+msgstr ""
+
+#: src/admin/assets/tour.js:202
+msgctxt "walkthrough button"
+msgid "Skip walkthrough"
+msgstr ""
+
+#: src/admin/assets/tour.js:215
+msgctxt "walkthrough button"
+msgid "Done"
+msgstr ""
+
+#: src/admin/assets/tour.js:220
+msgctxt "walkthrough button"
+msgid "Next"
+msgstr ""
+
+#: src/admin/assets/tour.js:271
+msgctxt "walkthrough button"
+msgid "Take the walkthrough"
 msgstr ""

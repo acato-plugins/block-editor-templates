@@ -1,5 +1,6 @@
 /**
- * Block Templates > Settings: which extra columns the template lists show.
+ * Block Templates > Settings: which extra columns the template lists show, and whether the
+ * walkthrough is offered.
  *
  * Replaces the plain Settings API form that the PHP side (Settings::render_site_page) prints as the
  * fallback without JavaScript, and saves through the REST settings endpoint.
@@ -13,6 +14,7 @@ import {
 	Button,
 	Card,
 	CardBody,
+	CardDivider,
 	CardFooter,
 	CardHeader,
 	Notice,
@@ -21,6 +23,7 @@ import {
 import domReady from '@wordpress/dom-ready';
 import {
 	createRoot,
+	Fragment,
 	useCallback,
 	useEffect,
 	useMemo,
@@ -36,7 +39,8 @@ import './settings.scss';
  *
  * @param {Object}      props               Component props.
  * @param {string}      props.option        The option name in the REST settings endpoint.
- * @param {Object[]}    props.fields        The settings: key, label and description.
+ * @param {Object[]}    props.sections      The groups the settings are shown in: key and title.
+ * @param {Object[]}    props.fields        The settings: key, label, description and section.
  * @param {Object}      props.values        This site's own values.
  * @param {Object|null} props.networkValues The network default, on multisite.
  * @param {boolean}     props.usesNetwork   Whether this site follows the network default.
@@ -46,6 +50,7 @@ import './settings.scss';
  */
 const SettingsPage = ({
 	option,
+	sections,
 	fields,
 	values: initialValues,
 	networkValues,
@@ -153,12 +158,6 @@ const SettingsPage = ({
 			)}
 
 			<Card>
-				<CardHeader>
-					<h2 className="abet-settings__title">
-						{__('Template lists', 'block-editor-templates')}
-					</h2>
-				</CardHeader>
-
 				{isMultisite && (
 					<CardBody className="abet-settings__source">
 						<ToggleControl
@@ -184,24 +183,39 @@ const SettingsPage = ({
 					</CardBody>
 				)}
 
-				<CardBody>
-					<ul className="abet-settings__list">
-						{fields.map(({ key, label, description }) => (
-							<li key={key} className="abet-settings__item">
-								<ToggleControl
-									__nextHasNoMarginBottom
-									label={label}
-									help={description}
-									checked={!!shown[key]}
-									disabled={useNetwork}
-									onChange={(checked) =>
-										onToggle(key, checked)
-									}
-								/>
-							</li>
-						))}
-					</ul>
-				</CardBody>
+				{sections.map(({ key: section, title }, index) => (
+					<Fragment key={section}>
+						{(index > 0 || isMultisite) && <CardDivider />}
+						<CardHeader isBorderless>
+							<h2 className="abet-settings__title">{title}</h2>
+						</CardHeader>
+						<CardBody>
+							<ul className="abet-settings__list">
+								{fields
+									.filter(
+										(field) => field.section === section
+									)
+									.map(({ key, label, description }) => (
+										<li
+											key={key}
+											className="abet-settings__item"
+										>
+											<ToggleControl
+												__nextHasNoMarginBottom
+												label={label}
+												help={description}
+												checked={!!shown[key]}
+												disabled={useNetwork}
+												onChange={(checked) =>
+													onToggle(key, checked)
+												}
+											/>
+										</li>
+									))}
+							</ul>
+						</CardBody>
+					</Fragment>
+				))}
 
 				<CardFooter justify="flex-end">
 					<Button
