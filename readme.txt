@@ -77,6 +77,11 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 = 1.3.0 =
 Release Date: unreleased
 
+Feature: Block Templates > Settings sets the minimum roles to create, edit, publish and delete templates. Each can hold several roles, custom roles included, grouped as WordPress and custom roles, with a search field. A user qualifies with one of the chosen roles, or a role with at least the same WordPress publishing rights; administrators always do. The default is Editor. On a multisite network a super admin sets the default for every site, and a site can use its own.
+Feature: "Add New" for templates, for the roles that may create them. A new template gets a "Template for" choice in the editor (a post type, taxonomy, special page or the General Template), fixed once saved.
+Feature: The network settings page looks and works like the site's settings page, and a site that follows the network settings links to it for a super admin.
+Change: The template post types have their own capabilities (abet_template / abet_templates) instead of those of posts. The 'acato/block_editor_templates/post_type/capability_type' filter still overrides them; the role settings then no longer apply. Editors can now open the Block Templates menu by default; pick Administrator on the settings page to keep it as before.
+
 Performance (BET-1): The plugin no longer checks on every request, front end included, that a template exists for every post type, taxonomy and special page. It checks in the admin only, and only when one of those, the theme type or the plugin version changed, or a template was changed or deleted. Two admin requests at the same time can no longer create the same template twice. This removes about 35 database queries from every page view.
 Performance (BET-2): The block templates of the post types are built only for the block editor and the post types REST endpoint it asks, not on every request.
 Performance (BET-3): Which archive and 404 template applies is remembered until a template changes, instead of being looked up on every archive and 404 page view.
