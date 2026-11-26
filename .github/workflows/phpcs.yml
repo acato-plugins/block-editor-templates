@@ -27,7 +27,7 @@ jobs:
         run: |
           composer global config --no-interaction allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
           composer global require --no-interaction --no-progress \
-            wp-coding-standards/wpcs:^3.1 \
+            wp-coding-standards/wpcs:^3.4 \
             phpcompatibility/phpcompatibility-wp:^2.1
 
       - name: Run PHPCS

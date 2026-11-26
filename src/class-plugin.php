@@ -11,6 +11,7 @@
 namespace Acato\Block_Editor_Templates;
 
 use Acato\Block_Editor_Templates\Admin\Admin;
+use Acato\Block_Editor_Templates\Admin\Capabilities;
 use Acato\Block_Editor_Templates\Admin\List_Table;
 use Acato\Block_Editor_Templates\Admin\Settings;
 use Acato\Block_Editor_Templates\Admin\Tour;
@@ -35,7 +36,9 @@ class Plugin {
 	public function __construct() {
 		$this->define_constants();
 
+		Upgrade::get_instance();
 		Admin::get_instance();
+		Capabilities::get_instance();
 		Settings::get_instance();
 		List_Table::get_instance();
 		Tour::get_instance();

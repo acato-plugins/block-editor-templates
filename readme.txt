@@ -1,9 +1,9 @@
 === Block Editor Templates ===
 Contributors: acato, rockfire, paulacato, rmpel, eyalacato
 Tags: block editor, gutenberg, block templates
-Requires at least: 5.0
+Requires at least: 6.6
 Tested up to: 7.1
-Requires PHP: 7.2
+Requires PHP: 7.4
 Stable tag: 1.2.0
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl.html
@@ -72,7 +72,45 @@ Please tell us, we'd like to fix it. Small wording mistakes are easy to miss, an
 
 You can report security bugs through the Patchstack Vulnerability Disclosure Program. The Patchstack team helps validate, triage and handle any security vulnerabilities. [Report a security vulnerability.]( https://patchstack.com/database/vdp/398f3310-d285-4489-ae3b-07b8ab344119 )
 
+== Screenshots ==
+
+1. The Post Type Templates list, with a preview of each template, whether it prefills new posts, and who created and last modified it.
+2. Editing the template for Posts: the "Post Type Template" panel switches prefilling new posts on or off, and "Template for" shows which post type it belongs to.
+3. A template made with "Add New" chooses what it is for before it is used.
+4. A new post starts with the blocks and text of the Posts template.
+5. Block Templates > Settings: the roles that may create, edit, publish and delete templates, with WordPress and custom roles to choose from.
+6. On a classic theme, the 404 page shows the content of its Special Template, laid out by the theme.
+
 == Changelog ==
+
+= 1.3.0 =
+Release Date: unreleased
+
+Feature: Block Templates > Settings sets the roles that may create, edit, publish and delete templates. Each can hold several roles, any role of the site, custom roles included, grouped as WordPress and custom roles, with a search field. A user qualifies with one of the chosen roles; administrators always do. The default is Editor. On a multisite network a super admin sets the default for every site, and a site can use its own.
+Feature: "Add New" for templates, for the roles that may create them. A new template gets a "Template for" choice in the editor (a post type, taxonomy, special page or the General Template), fixed once saved.
+Feature: The network settings page looks and works like the site's settings page, and a site that follows the network settings links to it for a super admin.
+Change: The template post types have their own capabilities (abet_template / abet_templates) instead of those of posts. The 'acato/block_editor_templates/post_type/capability_type' filter still overrides them; the role settings then no longer apply. Editors can now open the Block Templates menu by default; pick Administrator on the settings page to keep it as before.
+
+Performance (BET-1): The plugin no longer checks on every request, front end included, that a template exists for every post type, taxonomy and special page. It checks in the admin only, and only when one of those, the theme type or the plugin version changed, or a template was changed or deleted. Two admin requests at the same time can no longer create the same template twice. This removes about 35 database queries from every page view.
+Performance (BET-2): The block templates of the post types are built only for the block editor and the post types REST endpoint it asks, not on every request.
+Performance (BET-3): Which archive and 404 template applies is remembered until a template changes, instead of being looked up on every archive and 404 page view.
+Fix: After a template was unpublished or deleted, a site with a persistent object cache could keep using it, or create its template again, for up to an hour.
+Chore: A database version per network (per site on a single site), so data stored by an older version is brought up to date once, for every site of the network, before the new code uses it.
+Chore: Builds with Node 26.
+Chore: Requires PHP 7.4, the minimum WordPress itself requires. PHP 7.2 and 7.3 no longer receive security fixes.
+Fix: A Taxonomy Archive Template whose taxonomy cannot be linked to no longer gets a broken "View" link in the list.
+Security: Templates are visible to logged-in users only. The template REST endpoints refuse visitors who are not logged in, and template content no longer shows in the post types REST endpoint for them. Archive and 404 pages still show their template to everyone.
+Feature: A template for a post type or taxonomy is only edited, published or deleted by users who may also edit that post type (such as edit_products for products) or manage that taxonomy's terms, on top of the role settings. Filter: acato/block_editor_templates/target_capability.
+Security: Template access fails closed: visitors who are not logged in never get template access, and a chosen role a site does not have lets nobody extra through.
+Fix: Only published Post Type Templates are applied to new posts, as documented. A draft, pending or private template no longer takes effect, and its content no longer shows in the post types REST endpoint.
+Fix: Each post type, taxonomy and special page can have one template. The server refuses a second one, and the editor no longer offers it.
+Fix: Special Templates moved to the trash are created again as drafts, like the other templates, and they get the same states in the list.
+Fix: The settings page shows what was saved: a role that cannot be chosen is dropped on save and no longer stays visible.
+Performance: The capability check and the settings it reads are worked out once per request. On a multisite network the settings pages read only each site's role definitions instead of loading every site's options.
+Performance: The editor builds only the template of the post type it opens. The network upgrade runs once, under a lock, and only for someone who is logged in, as does the template check. Template list previews no longer make rows jump, and their View links cost one query per taxonomy instead of one per row.
+Chore: Requires WordPress 6.6, which the editor panels need.
+Fix: Archive and 404 templates keep their form fields, such as the input of a Search block. Their output is no longer filtered a second time; the content is filtered when it is saved, as for posts.
+Fix: Archive and 404 templates sit in the theme's content area (.entry-content), so classic themes such as Twenty Twenty-One apply their width and spacing.
 
 = 1.2.0 =
 Release Date: November 10th, 2026
@@ -141,3 +179,8 @@ Fix: Changes in the plugin for posting to WordPress.org include using get_posts 
 Release Date: May 26th, 2025
 
 First public version.
+
+== Upgrade Notice ==
+
+= 1.3.0 =
+Template access now follows Block Templates > Settings; the default role is Editor. Requires WordPress 6.6 and PHP 7.4.

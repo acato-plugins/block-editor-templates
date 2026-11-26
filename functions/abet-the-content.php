@@ -38,6 +38,10 @@ if ( ! function_exists( 'abet_the_content' ) ) {
 		$content = apply_filters( 'the_content', $content );
 		$content = str_replace( ']]>', ']]&gt;', $content );
 
-		echo wp_kses_post( $content );
+		// Output as WordPress' own the_content() does. The content was filtered when it was saved
+		// (wp_filter_post_kses for users without unfiltered_html, which the template roles never
+		// grant), and the_content has rendered the dynamic blocks; filtering the rendered page again
+		// would strip their form fields, such as the input of a Search block.
+		echo $content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- See above.
 	}
 }

@@ -18,5 +18,12 @@ status_header( 404 );
 nocache_headers();
 
 get_header();
-abet_the_content();
+?>
+<?php // .entry-content is where classic themes set the content width and spacing. ?>
+<article class="abet-template hentry">
+	<div class="entry-content">
+		<?php abet_the_content(); ?>
+	</div>
+</article>
+<?php
 get_footer();
