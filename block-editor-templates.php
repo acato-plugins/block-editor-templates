@@ -10,7 +10,7 @@
  * Description:       Templates for the WordPress Block Editor.
  * Version:           1.2.0
  * Requires at least: 5.0
- * Requires PHP:      7.2
+ * Requires PHP:      7.4
  * Author:            Acato
  * Author URI:        https://www.acato.nl
  * License:           GPLv3

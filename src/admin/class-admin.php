@@ -1815,11 +1815,15 @@ class Admin {
 						'hide_empty' => false,
 					]
 				);
-				if ( ! empty( $terms ) && ! is_wp_error( $terms ) ) {
-					return get_term_link( $terms[0] );
+				if ( empty( $terms ) || is_wp_error( $terms ) ) {
+					return false;
 				}
 
-				return false;
+				// get_term_link() returns a WP_Error for a term it cannot link to, which would end up
+				// as the row's "View" link; this method promises a URL or false.
+				$link = get_term_link( $terms[0] );
+
+				return is_wp_error( $link ) ? false : $link;
 
 			case 'special-templates':
 				$meta_value    = get_post_meta( $post->ID, '_template_for_special', true );

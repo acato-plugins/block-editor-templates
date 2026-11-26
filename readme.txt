@@ -3,7 +3,7 @@ Contributors: acato, rockfire, paulacato, rmpel, eyalacato
 Tags: block editor, gutenberg, block templates
 Requires at least: 5.0
 Tested up to: 7.1
-Requires PHP: 7.2
+Requires PHP: 7.4
 Stable tag: 1.2.0
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl.html
@@ -88,6 +88,8 @@ Performance (BET-3): Which archive and 404 template applies is remembered until 
 Fix: After a template was unpublished or deleted, a site with a persistent object cache could keep using it, or create its template again, for up to an hour.
 Chore: A database version per network (per site on a single site), so data stored by an older version is brought up to date once, for every site of the network, before the new code uses it.
 Chore: Builds with Node 26.
+Chore: Requires PHP 7.4, the minimum WordPress itself requires. PHP 7.2 and 7.3 no longer receive security fixes.
+Fix: A Taxonomy Archive Template whose taxonomy cannot be linked to no longer gets a broken "View" link in the list.
 
 = 1.2.0 =
 Release Date: November 10th, 2026
