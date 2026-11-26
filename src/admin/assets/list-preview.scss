@@ -12,7 +12,9 @@
 	display: block;
 	inline-size: 200px;
 	max-inline-size: 100%;
-	max-block-size: 200px;
+
+	/* A fixed height, so rows do not jump when the preview renders as it scrolls into view. */
+	block-size: 200px;
 
 	/* Physical on purpose: overflow-inline/-block are only Baseline newly available
 	   (Chrome 135, Safari 26, Firefox 69), not widely available yet. wp-admin is

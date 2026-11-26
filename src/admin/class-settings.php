@@ -75,6 +75,15 @@ class Settings {
 	private static $saving_network = false;
 
 	/**
+	 * The settings in effect, per site, for the rest of the request. Every template capability check
+	 * reads them (see Capabilities::grant()), so a list of templates would otherwise rebuild them
+	 * hundreds of times. Cleared by self::forget_values() when the option changes.
+	 *
+	 * @var array<int, array<string, bool|string[]>>
+	 */
+	private static $values = [];
+
+	/**
 	 * Get the singleton instance of this class.
 	 *
 	 * @return Settings The singleton instance of this class.
@@ -99,6 +108,9 @@ class Settings {
 		add_action( 'admin_menu', [ self::class, 'admin_menu' ], 20 );
 		add_action( 'network_admin_menu', [ self::class, 'network_admin_menu' ] );
 		add_action( 'network_admin_edit_' . self::NETWORK_PAGE, [ self::class, 'save_network_settings' ] );
+		foreach ( [ 'add_option_', 'update_option_', 'delete_option_', 'add_site_option_', 'update_site_option_', 'delete_site_option_' ] as $hook ) {
+			add_action( $hook . self::OPTION, [ self::class, 'forget_values' ] );
+		}
 		add_action( 'rest_api_init', [ self::class, 'register_network_route' ] );
 	}
 
@@ -258,11 +270,21 @@ class Settings {
 	 * @return array<string, bool|string[]>
 	 */
 	public static function values() {
-		if ( self::site_uses_network() ) {
-			return self::network_values();
+		$site = get_current_blog_id();
+		if ( ! isset( self::$values[ $site ] ) ) {
+			self::$values[ $site ] = self::site_uses_network() ? self::network_values() : self::normalize( get_option( self::OPTION, [] ) );
 		}
 
-		return self::normalize( get_option( self::OPTION, [] ) );
+		return self::$values[ $site ];
+	}
+
+	/**
+	 * Forget the settings kept for this request, after the site or network value changed.
+	 *
+	 * @return void
+	 */
+	public static function forget_values() {
+		self::$values = [];
 	}
 
 	/**
@@ -625,8 +647,11 @@ class Settings {
 	 */
 	private static function update_network_values( $values ) {
 		self::$saving_network = true;
-		update_site_option( self::OPTION, $values );
-		self::$saving_network = false;
+		try {
+			update_site_option( self::OPTION, $values );
+		} finally {
+			self::$saving_network = false;
+		}
 	}
 
 	/**

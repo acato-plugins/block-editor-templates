@@ -8,6 +8,7 @@
 
 namespace Acato\Block_Editor_Templates\Admin;
 
+use Acato\Block_Editor_Templates\Lock;
 use WP_Post;
 
 /**
@@ -99,10 +100,21 @@ class Admin {
 		add_action( 'admin_init', [ self::class, 'sync_template_posts' ] );
 		// The block templates are only read by the editor and by the post types REST endpoint it asks,
 		// so build them there and not on every request (BET-2).
-		add_action( 'load-post.php', [ self::class, 'register_block_templates' ] );
-		add_action( 'load-post-new.php', [ self::class, 'register_block_templates' ] );
+		add_action( 'load-post.php', [ self::class, 'register_block_templates_for_screen' ] );
+		add_action( 'load-post-new.php', [ self::class, 'register_block_templates_for_screen' ] );
+		add_filter( 'rest_pre_dispatch', [ self::class, 'refuse_anonymous_template_requests' ], 5, 3 );
 		add_filter( 'rest_pre_dispatch', [ self::class, 'register_block_templates_for_rest' ], 10, 3 );
 		add_action( 'clean_post_cache', [ self::class, 'flush_template_caches' ], 10, 2 );
+		// The REST API writes meta after the post (and after clean_post_cache), so also forget the
+		// caches when what a template is for is written.
+		foreach ( [ 'added_post_meta', 'updated_post_meta', 'deleted_post_meta' ] as $hook ) {
+			add_action( $hook, [ self::class, 'flush_on_template_for_change' ], 10, 3 );
+		}
+		add_filter( 'add_post_metadata', [ self::class, 'refuse_taken_target' ], 10, 4 );
+		foreach ( self::TEMPLATE_POST_TYPES as $post_type ) {
+			add_filter( 'rest_pre_insert_' . $post_type, [ self::class, 'refuse_taken_target_in_rest' ], 10, 2 );
+		}
+		add_filter( 'update_post_metadata', [ self::class, 'refuse_taken_target' ], 10, 4 );
 		add_filter( 'map_meta_cap', [ self::class, 'lock_template_for' ], 10, 4 );
 		add_filter( 'default_content', [ self::class, 'set_default_content' ], 10, 2 );
 		add_action( 'admin_notices', [ self::class, 'stale_template_notice' ] );
@@ -225,21 +237,28 @@ class Admin {
 	}
 
 	/**
-	 * Register block templates for all post types.
+	 * Register the block templates, for one post type or for all of them.
 	 *
 	 * WordPress only reads a post type's template in the block editor (wp-admin/edit-form-blocks.php)
 	 * and in the post types REST endpoint, so this runs when one of those is loaded rather than on
-	 * every request. It runs once per request.
+	 * every request, and only for the post type that is asked for. It does the work for a post type
+	 * once per request.
+	 *
+	 * Only published templates are applied: a template is created as a draft and becomes active when
+	 * it is published, which is what the publish role controls. That also keeps unpublished template
+	 * content out of the post types REST endpoint, which anyone may read.
+	 *
+	 * @param string $only_post_type The post type to register the template of, or '' for all.
 	 *
 	 * @return void
 	 */
-	public static function register_block_templates() {
-		static $registered = false;
+	public static function register_block_templates( $only_post_type = '' ) {
+		static $registered = [];
 
-		if ( $registered ) {
+		if ( isset( $registered['*'] ) || isset( $registered[ $only_post_type ] ) ) {
 			return;
 		}
-		$registered = true;
+		$registered[ '' === $only_post_type ? '*' : $only_post_type ] = true;
 
 		self::$registered_blocks = \WP_Block_Type_Registry::get_instance()->get_all_registered();
 
@@ -249,6 +268,11 @@ class Admin {
 		_prime_post_caches( $post_ids, false, true );
 
 		foreach ( $post_ids as $post_id ) {
+			$post_type = (string) get_post_meta( $post_id, '_template_for_posttype', true );
+			if ( '' !== $only_post_type && $post_type !== $only_post_type ) {
+				continue;
+			}
+
 			// Templates that prefill new posts through default_content (see self::set_default_content())
 			// must not also register $object->template, which rebuilds each block via createBlock and
 			// therefore drops markup-sourced content such as a heading's or paragraph's text.
@@ -256,29 +280,37 @@ class Admin {
 				continue;
 			}
 
-			$post_type = get_post_meta( $post_id, '_template_for_posttype', true );
-			$object    = get_post_type_object( $post_type );
-
-			if ( ! $object ) {
+			$object = get_post_type_object( $post_type );
+			$post   = get_post( $post_id );
+			if ( ! $object || ! $post || 'publish' !== $post->post_status || ! has_blocks( $post->post_content ) ) {
 				continue;
 			}
 
-			$post = get_post( $post_id );
-			if ( $post && has_blocks( $post->post_content ) ) {
-				$blocks   = parse_blocks( $post->post_content );
-				$template = self::blocks_to_template( $blocks );
-
-				if ( count( $template ) ) {
-					$object->template = $template;
-				}
+			$template = self::blocks_to_template( parse_blocks( $post->post_content ) );
+			if ( count( $template ) ) {
+				$object->template = $template;
 			}
+		}
+	}
+
+	/**
+	 * Register the block template of the post type the editor is opening.
+	 *
+	 * @return void
+	 */
+	public static function register_block_templates_for_screen() {
+		global $typenow;
+
+		if ( is_string( $typenow ) && '' !== $typenow ) {
+			self::register_block_templates( $typenow );
 		}
 	}
 
 	/**
 	 * Register the block templates before the post types REST endpoint answers.
 	 *
-	 * The endpoint returns each post type's template, which the editor asks for.
+	 * The endpoint returns each post type's template, which the editor asks for: one post type for
+	 * /wp/v2/types/<type>, all of them for /wp/v2/types.
 	 *
 	 * @param mixed            $result  The response so far, passed through unchanged.
 	 * @param \WP_REST_Server  $server  The REST server.
@@ -287,8 +319,52 @@ class Admin {
 	 * @return mixed The unchanged response.
 	 */
 	public static function register_block_templates_for_rest( $result, $server, $request ) {
-		if ( 0 === strpos( $request->get_route(), '/wp/v2/types' ) ) {
+		// Template content is for logged-in users only (see self::refuse_anonymous_template_requests()).
+		if ( ! is_user_logged_in() ) {
+			return $result;
+		}
+
+		$route = (string) $request->get_route();
+
+		if ( preg_match( '#^/wp/v2/types/([^/]+)#', $route, $matches ) ) {
+			self::register_block_templates( sanitize_key( $matches[1] ) );
+		} elseif ( 0 === strpos( $route, '/wp/v2/types' ) ) {
 			self::register_block_templates();
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Refuse REST requests for templates from visitors who are not logged in.
+	 *
+	 * Templates can hold text that is not meant for the public, even once published: their content
+	 * reaches visitors only as part of the pages they render (an archive, the 404 page) or as the
+	 * start of a new post. WordPress would otherwise let anyone read published template posts and
+	 * their meta through /wp/v2/<template post type>, because the post types are shown in REST for
+	 * the block editor.
+	 *
+	 * @param mixed            $result  The response so far.
+	 * @param \WP_REST_Server  $server  The REST server.
+	 * @param \WP_REST_Request $request The request.
+	 *
+	 * @return mixed The response so far, or an error for an anonymous template request.
+	 */
+	public static function refuse_anonymous_template_requests( $result, $server, $request ) {
+		if ( null !== $result || is_user_logged_in() ) {
+			return $result;
+		}
+
+		$bases = [];
+		foreach ( array_keys( self::post_types() ) as $post_type ) {
+			$object = get_post_type_object( $post_type );
+			if ( $object ) {
+				$bases[] = preg_quote( $object->rest_namespace . '/' . ( $object->rest_base ? $object->rest_base : $post_type ), '#' );
+			}
+		}
+
+		if ( $bases && preg_match( '#^/(' . implode( '|', $bases ) . ')(/|$)#', (string) $request->get_route() ) ) {
+			return new \WP_Error( 'rest_forbidden', __( 'Sorry, you need to be logged in to see templates.', 'block-editor-templates' ), [ 'status' => rest_authorization_required_code() ] );
 		}
 
 		return $result;
@@ -316,6 +392,112 @@ class Admin {
 		}
 		delete_transient( self::LOOKUP_TRANSIENT );
 		delete_option( self::SYNC_OPTION );
+	}
+
+	/**
+	 * Forget the template caches when the "Template for" meta of a template is added, changed or removed.
+	 *
+	 * @param int|int[] $meta_ids  The meta ID(s).
+	 * @param int       $object_id The post ID.
+	 * @param string    $meta_key  The meta key.
+	 *
+	 * @return void
+	 */
+	public static function flush_on_template_for_change( $meta_ids, $object_id, $meta_key ) {
+		$settings = self::post_types()[ (string) get_post_type( (int) $object_id ) ] ?? null;
+		$post     = get_post( (int) $object_id );
+
+		if ( $settings && $post && $settings['meta_field'] === $meta_key ) {
+			self::flush_template_caches( $post->ID, $post );
+		}
+	}
+
+	/**
+	 * Refuse to give a template a target that another template of the same kind already has.
+	 *
+	 * One template per post type, taxonomy or special page: with two, which one applies would depend
+	 * on their dates. The plugin's own sync only creates templates for targets without one, so it is
+	 * never refused. A trashed template does not hold its target.
+	 *
+	 * @param null|bool $check      Null to let WordPress write the meta, anything else to stop it.
+	 * @param int       $object_id  The post ID.
+	 * @param string    $meta_key   The meta key.
+	 * @param mixed     $meta_value The new value.
+	 *
+	 * @return null|bool False to refuse the write, otherwise $check unchanged.
+	 */
+	public static function refuse_taken_target( $check, $object_id, $meta_key, $meta_value ) {
+		if ( null !== $check ) {
+			return $check;
+		}
+
+		return self::is_target_taken( (string) get_post_type( (int) $object_id ), $meta_key, $meta_value, (int) $object_id ) ? false : $check;
+	}
+
+	/**
+	 * Whether another, non-trashed template of a template post type is already for a target.
+	 *
+	 * @param string $post_type  The template post type.
+	 * @param string $meta_key   The meta key being written; only its post type's "Template for" field counts.
+	 * @param mixed  $target     The target.
+	 * @param int    $exclude_id The template being saved, 0 for a new one.
+	 *
+	 * @return bool
+	 */
+	private static function is_target_taken( $post_type, $meta_key, $target, $exclude_id ) {
+		$settings = self::post_types()[ $post_type ] ?? null;
+		if ( ! $settings || $settings['meta_field'] !== $meta_key || ! is_scalar( $target ) || '' === (string) $target ) {
+			return false;
+		}
+
+		$taken = get_posts(
+			[
+				'post_type'    => $post_type,
+				'post_status'  => 'any',
+				'fields'       => 'ids',
+				'numberposts'  => 1,
+				'post__not_in' => $exclude_id ? [ $exclude_id ] : [],
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key, WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- Only when a template's target is written.
+				'meta_key'     => $meta_key,
+				'meta_value'   => (string) $target,
+			]
+		);
+
+		return (bool) $taken;
+	}
+
+	/**
+	 * Refuse a REST save that gives a template a target another template already has, before
+	 * anything is written, with a message the editor shows.
+	 *
+	 * The meta write itself is stopped by self::refuse_taken_target(), but by then the REST API has already
+	 * saved the post and can only report a generic error.
+	 *
+	 * @param \stdClass|\WP_Error $prepared_post The post about to be saved.
+	 * @param \WP_REST_Request    $request       The request.
+	 *
+	 * @return \stdClass|\WP_Error The post, or an error when the target is taken.
+	 */
+	public static function refuse_taken_target_in_rest( $prepared_post, $request ) {
+		if ( is_wp_error( $prepared_post ) ) {
+			return $prepared_post;
+		}
+
+		$settings = self::post_types()[ (string) ( $prepared_post->post_type ?? '' ) ] ?? null;
+		$meta     = $request->get_param( 'meta' );
+		if ( ! $settings || ! is_array( $meta ) || ! isset( $meta[ $settings['meta_field'] ] ) ) {
+			return $prepared_post;
+		}
+
+		if ( self::is_target_taken( (string) $prepared_post->post_type, (string) $settings['meta_field'], $meta[ $settings['meta_field'] ], (int) ( $prepared_post->ID ?? 0 ) ) ) {
+			return new \WP_Error(
+				'abet_template_target_taken',
+				__( 'Another template is already for this. Choose something else, or edit that template.', 'block-editor-templates' ),
+				[ 'status' => 400 ]
+			);
+		}
+
+		return $prepared_post;
 	}
 
 	/**
@@ -1061,8 +1243,14 @@ class Admin {
 	 * @return void
 	 */
 	public static function sync_template_posts() {
+		// admin_init also fires for anonymous admin-ajax.php and admin-post.php requests; leave the
+		// work to someone who is logged in, so a visitor never triggers it.
+		if ( ! is_user_logged_in() ) {
+			return;
+		}
+
 		$signature = self::sync_signature();
-		if ( get_option( self::SYNC_OPTION ) === $signature || ! self::acquire_sync_lock() ) {
+		if ( get_option( self::SYNC_OPTION ) === $signature || ! Lock::acquire( self::SYNC_LOCK ) ) {
 			return;
 		}
 
@@ -1074,7 +1262,7 @@ class Admin {
 			}
 			update_option( self::SYNC_OPTION, $signature, true );
 		} finally {
-			self::release_sync_lock();
+			Lock::release( self::SYNC_LOCK );
 		}
 	}
 
@@ -1100,47 +1288,6 @@ class Admin {
 		}
 
 		return md5( (string) wp_json_encode( $parts ) );
-	}
-
-	/**
-	 * Take the sync lock, so a second admin request (such as the heartbeat) does not create the same
-	 * template posts at the same time.
-	 *
-	 * INSERT IGNORE on the unique option_name is atomic, where add_option() is not. A lock left behind
-	 * by a request that died is taken over after five minutes.
-	 *
-	 * @return bool True when this request holds the lock.
-	 */
-	private static function acquire_sync_lock() {
-		global $wpdb;
-
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery -- An atomic lock needs a direct query, and must not be cached.
-		$insert = "INSERT IGNORE INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')";
-		if ( $wpdb->query( $wpdb->prepare( $insert, self::SYNC_LOCK, time() ) ) ) { // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Prepared here.
-			return true;
-		}
-
-		$locked_at = (int) $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", self::SYNC_LOCK ) );
-		if ( $locked_at > time() - 5 * MINUTE_IN_SECONDS ) {
-			return false;
-		}
-
-		self::release_sync_lock();
-		$locked = (bool) $wpdb->query( $wpdb->prepare( $insert, self::SYNC_LOCK, time() ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Prepared here.
-		// phpcs:enable
-
-		return $locked;
-	}
-
-	/**
-	 * Release the sync lock.
-	 *
-	 * @return void
-	 */
-	private static function release_sync_lock() {
-		global $wpdb;
-
-		$wpdb->delete( $wpdb->options, [ 'option_name' => self::SYNC_LOCK ] ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery -- See self::acquire_sync_lock().
 	}
 
 	/**
@@ -1280,89 +1427,80 @@ class Admin {
 	}
 
 	/**
-	 * Create a block template for each registered post type and also an Archive Template for each registered post type
-	 * that has an archive.
+	 * Create the missing templates of one template post type: one per target (see
+	 * self::template_targets()), plus its General Template where it has one.
+	 *
+	 * A target counts as having a template while any non-trashed template is for it, so a template
+	 * moved to the trash is created again, as a new draft.
+	 *
+	 * @param string $slug The template post type.
+	 *
+	 * @return void
+	 */
+	private static function sync_template_type( $slug ) {
+		$settings = self::post_types()[ $slug ] ?? null;
+		if ( ! $settings ) {
+			return;
+		}
+
+		$meta_field = (string) $settings['meta_field'];
+		$created    = array_map( 'strval', self::get_created_templates( $meta_field ) );
+
+		if ( $settings['general_template'] ) {
+			$created = self::ensure_general_template( $slug, $meta_field, $created );
+		}
+
+		foreach ( self::template_targets( $slug ) as $target => $label ) {
+			if ( in_array( (string) $target, $created, true ) ) {
+				continue;
+			}
+
+			wp_insert_post(
+				[
+					'post_type'   => $slug,
+					'post_title'  => $label,
+					'post_status' => 'draft',
+					'meta_input'  => [
+						$meta_field => (string) $target,
+					],
+				]
+			);
+		}
+	}
+
+	/**
+	 * Create the missing Post Type Templates and Post Type Archive Templates.
 	 *
 	 * Called by self::sync_template_posts().
 	 *
 	 * @return void
 	 */
 	public static function create_post_type_posts() {
-		foreach ( self::post_types() as $slug => $settings ) {
-			if ( 'post_type' !== $settings['for'] ) {
-				continue;
-			}
-
-			$filtered_registered_post_types = array_map( 'strval', array_keys( self::template_targets( $slug ) ) );
-
-			$created_templates = self::get_created_templates( (string) $settings['meta_field'] );
-
-			if ( $settings['general_template'] ) {
-				$created_templates = self::ensure_general_template( $slug, (string) $settings['meta_field'], $created_templates );
-			}
-
-			$difference = array_merge( array_diff( $filtered_registered_post_types, $created_templates ), array_diff( $created_templates, $filtered_registered_post_types ) );
-			if ( count( $difference ) ) {
-				foreach ( $difference as $post_type ) {
-					if ( in_array( $post_type, $filtered_registered_post_types, true ) ) {
-						// We need to create a new post.
-						$obj = get_post_type_object( $post_type );
-						wp_insert_post(
-							[
-								'post_type'   => $slug,
-								'post_title'  => $obj->labels->name,
-								'post_status' => 'draft',
-								'meta_input'  => [
-									$settings['meta_field'] => $post_type,
-								],
-							]
-						);
-					}
-				}
-			}
-		}
+		self::sync_template_types( 'post_type' );
 	}
 
 	/**
-	 * Create an Archive Template for each registered taxonomy.
+	 * Create the missing Taxonomy Archive Templates.
 	 *
 	 * Called by self::sync_template_posts().
 	 *
 	 * @return void
 	 */
 	public static function create_taxonomy_posts() {
-		$registered_taxonomies = array_map( 'strval', array_keys( self::template_targets( 'tax-arch-templates' ) ) );
+		self::sync_template_types( 'taxonomy' );
+	}
 
+	/**
+	 * Create every template post type's missing templates for one kind of target.
+	 *
+	 * @param string $kind 'post_type', 'taxonomy' or 'special' (the 'for' of self::post_types()).
+	 *
+	 * @return void
+	 */
+	private static function sync_template_types( $kind ) {
 		foreach ( self::post_types() as $slug => $settings ) {
-			if ( 'taxonomy' !== $settings['for'] ) {
-				continue;
-			}
-			$created_templates = self::get_created_templates( (string) $settings['meta_field'] );
-
-			if ( $settings['general_template'] ) {
-				$created_templates = self::ensure_general_template( $slug, (string) $settings['meta_field'], $created_templates );
-			}
-
-			$difference = array_merge( array_diff( $registered_taxonomies, $created_templates ), array_diff( $created_templates, $registered_taxonomies ) );
-			if ( count( $difference ) ) {
-				foreach ( $difference as $taxonomy ) {
-					if ( in_array( $taxonomy, $registered_taxonomies, true ) ) {
-						// We need to create a new post.
-						$obj = get_taxonomy( $taxonomy );
-						if ( $obj ) {
-							wp_insert_post(
-								[
-									'post_type'   => $slug,
-									'post_title'  => $obj->labels->name,
-									'post_status' => 'draft',
-									'meta_input'  => [
-										$settings['meta_field'] => $taxonomy,
-									],
-								]
-							);
-						}
-					}
-				}
+			if ( $kind === $settings['for'] ) {
+				self::sync_template_type( $slug );
 			}
 		}
 	}
@@ -1396,39 +1534,14 @@ class Admin {
 	}
 
 	/**
-	 * Create a template post for each registered special page.
+	 * Create the missing Special Templates.
 	 *
 	 * Called by self::sync_template_posts().
 	 *
 	 * @return void
 	 */
 	public static function create_special_pages() {
-		global $wpdb;
-
-		// Get all created templates.
-		$created_templates = $wpdb->get_results(
-			$wpdb->prepare( "SELECT meta_value FROM $wpdb->postmeta WHERE meta_key = %s", '_template_for_special' ),
-			ARRAY_A
-		);
-		$created_templates = array_column( $created_templates, 'meta_value' );
-
-		foreach ( self::special_pages() as $special_page_slug => $config ) {
-			// Force the slug to be a string.
-			$special_page_slug = (string) $special_page_slug;
-
-			if ( ! in_array( $special_page_slug, $created_templates, true ) ) {
-				wp_insert_post(
-					[
-						'post_type'   => 'special-templates',
-						'post_title'  => $config['name'] ?? $special_page_slug,
-						'post_status' => 'draft',
-						'meta_input'  => [
-							'_template_for_special' => $special_page_slug,
-						],
-					]
-				);
-			}
-		}
+		self::sync_template_types( 'special' );
 	}
 
 	/**
@@ -1446,10 +1559,7 @@ class Admin {
 			unset( $actions['clone'] );
 
 			// If the post is the General template, then remove the trash link.
-			if (
-				'general_template' === get_post_meta( $post->ID, '_template_for_posttype_archive', true )
-				|| 'general_template' === get_post_meta( $post->ID, '_template_for_taxonomy_archive', true )
-			) {
+			if ( 'general_template' === self::template_for( $post ) ) {
 				unset( $actions['trash'] );
 			}
 
@@ -1601,7 +1711,11 @@ class Admin {
 			$post_type  = 'pt-arch-templates';
 			$meta_key   = '_template_for_posttype_archive';
 			$meta_value = $wp_query->get( 'post_type' );
-			$templates  = [
+			// ?post_type[]=... reaches here as an array; core has already limited it to registered types.
+			if ( ! is_string( $meta_value ) ) {
+				return $archive_template;
+			}
+			$templates = [
 				'abet-' . $meta_value . '-archive.php',
 				'abet-posttype-archive.php',
 			];
@@ -1677,48 +1791,55 @@ class Admin {
 	 * @return string[]
 	 */
 	public static function add_display_post_states( $post_states, $post ) {
-		$post_type = get_post_type( $post );
-
-		// Check if we are on the correct post type.
-		if ( ! in_array( $post_type, [ 'block-templates', 'pt-arch-templates', 'tax-arch-templates' ], true ) ) {
+		$settings = self::post_types()[ (string) get_post_type( $post ) ] ?? null;
+		if ( ! $settings ) {
 			return $post_states;
 		}
 
-		switch ( $post_type ) {
-			default:
-			case 'block-templates':
-				$item_type   = get_post_meta( $post->ID, '_template_for_posttype', true );
-				$item_exists = post_type_exists( $item_type );
-				break;
-			case 'pt-arch-templates':
-				$item_type   = get_post_meta( $post->ID, '_template_for_posttype_archive', true );
-				$item_exists = post_type_exists( $item_type );
-				break;
-			case 'tax-arch-templates':
-				$item_type   = get_post_meta( $post->ID, '_template_for_taxonomy_archive', true );
-				$item_exists = taxonomy_exists( $item_type );
-				break;
-		}
+		$target = self::template_for( $post );
 
-		// Check if the post is a general template.
-		if ( 'general_template' === $item_type ) {
+		if ( 'general_template' === $target ) {
 			return $post_states;
 		}
 
 		// Made with Add New, and not yet told what it is for.
-		if ( '' === (string) $item_type ) {
+		if ( '' === $target ) {
 			$post_states['abet_unlinked'] = esc_html__( 'Not in use: choose “Template for”', 'block-editor-templates' );
 
 			return $post_states;
 		}
 
-		// Check if the post type exists.
-		if ( ! $item_exists ) {
+		switch ( $settings['for'] ) {
+			case 'taxonomy':
+				$exists = taxonomy_exists( $target );
+				break;
+			case 'special':
+				$exists = array_key_exists( $target, self::special_pages() );
+				break;
+			default:
+				$exists = post_type_exists( $target );
+		}
+
+		if ( ! $exists ) {
 			$post_states['deleted'] = esc_html__( 'Item is deleted', 'block-editor-templates' );
 		}
 
 		return $post_states;
 	}
+
+	/**
+	 * What a template is for: the value of its post type's "Template for" meta field.
+	 *
+	 * @param WP_Post $post The template post.
+	 *
+	 * @return string A post type, taxonomy or special page slug, 'general_template', or '' when unset.
+	 */
+	private static function template_for( $post ) {
+		$settings = self::post_types()[ $post->post_type ] ?? null;
+
+		return $settings ? (string) get_post_meta( $post->ID, (string) $settings['meta_field'], true ) : '';
+	}
+
 
 	/**
 	 * Add a "Prefill new posts" column to the block-templates list table.
@@ -1808,22 +1929,25 @@ class Admin {
 				if ( 'general_template' === $meta_value || empty( $meta_value ) ) {
 					return false;
 				}
-				$terms = get_terms(
-					[
-						'taxonomy'   => $meta_value,
-						'number'     => 1,
-						'hide_empty' => false,
-					]
-				);
-				if ( empty( $terms ) || is_wp_error( $terms ) ) {
-					return false;
+				// One term link per taxonomy, however many rows show it.
+				static $term_links = [];
+				if ( ! array_key_exists( $meta_value, $term_links ) ) {
+					$terms = get_terms(
+						[
+							'taxonomy'               => $meta_value,
+							'number'                 => 1,
+							'hide_empty'             => false,
+							'update_term_meta_cache' => false,
+						]
+					);
+
+					// get_term_link() returns a WP_Error for a term it cannot link to, which would end
+					// up as the row's "View" link; this method promises a URL or false.
+					$link                      = ( empty( $terms ) || is_wp_error( $terms ) ) ? false : get_term_link( $terms[0] );
+					$term_links[ $meta_value ] = is_wp_error( $link ) ? false : $link;
 				}
 
-				// get_term_link() returns a WP_Error for a term it cannot link to, which would end up
-				// as the row's "View" link; this method promises a URL or false.
-				$link = get_term_link( $terms[0] );
-
-				return is_wp_error( $link ) ? false : $link;
+				return $term_links[ $meta_value ];
 
 			case 'special-templates':
 				$meta_value    = get_post_meta( $post->ID, '_template_for_special', true );
@@ -1864,7 +1988,11 @@ class Admin {
 			$abet_template_post = get_post( $post_id );
 
 			$template_file = $config['template'] ?? '';
-			$located       = $template_file ? locate_template( [ $template_file ] ) : '';
+			// The file comes from the abet_special_pages filter: keep it inside the templates folder.
+			if ( ! is_string( $template_file ) || 0 !== validate_file( $template_file ) ) {
+				break;
+			}
+			$located = $template_file ? locate_template( [ $template_file ] ) : '';
 			if ( $located ) {
 				return $located;
 			}

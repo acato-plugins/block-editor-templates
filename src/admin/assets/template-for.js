@@ -48,6 +48,8 @@ const TemplateForPanel = () => {
 			},
 			...(choices ?? []).map(({ value, label, taken }) => ({
 				value,
+				// The server refuses a target another template already has.
+				disabled: taken,
 				label: taken
 					? sprintf(
 							/* translators: %s: post type, taxonomy or special page name. */

@@ -371,8 +371,9 @@ class Tour {
 
 		foreach ( get_sites(
 			[
-				'fields' => 'ids',
-				'number' => 0,
+				'fields'     => 'ids',
+				'number'     => 0,
+				'network_id' => get_current_network_id(),
 			]
 		) as $site_id ) {
 			switch_to_blog( (int) $site_id );

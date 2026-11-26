@@ -8,6 +8,7 @@
 namespace Acato\Block_Editor_Templates;
 
 use Acato\Block_Editor_Templates\Admin\Admin;
+use Acato\Block_Editor_Templates\Admin\Settings;
 
 /**
  * Brings the data stored by an older version of the plugin up to date.
@@ -43,6 +44,13 @@ class Upgrade {
 	const OPTION = 'abet_db_version';
 
 	/**
+	 * Option used as a lock while the network is upgraded.
+	 *
+	 * @var string
+	 */
+	const LOCK = 'abet_db_upgrade_lock';
+
+	/**
 	 * The singleton instance of this class.
 	 *
 	 * @var Upgrade|null
@@ -75,19 +83,89 @@ class Upgrade {
 	 * @return void
 	 */
 	public static function maybe_upgrade() {
-		$version = (int) get_site_option( self::OPTION, 1 );
+		if ( ! is_user_logged_in() ) {
+			return;
+		}
 
+		$version = (int) self::stored_version();
 		if ( $version >= self::DB_VERSION ) {
 			return;
 		}
 
+		// One request upgrades the network; others carry on and find it done later.
+		$lock_table = self::lock_table();
+		if ( ! Lock::acquire( self::LOCK, 15 * MINUTE_IN_SECONDS, $lock_table ) ) {
+			return;
+		}
+
+		try {
+			self::run_steps( $version );
+		} finally {
+			Lock::release( self::LOCK, $lock_table );
+		}
+	}
+
+	/**
+	 * The stored database version.
+	 *
+	 * A single site keeps it as an autoloaded option, which costs no query. On a network it is a
+	 * network option; it is primed together with the plugin's network settings, which the same
+	 * admin request reads anyway, so both cost one query together.
+	 *
+	 * @return int|false The version, or false when none is stored.
+	 */
+	private static function stored_version() {
+		if ( ! is_multisite() ) {
+			return get_option( self::OPTION, 1 );
+		}
+
+		wp_prime_network_option_caches( get_current_network_id(), [ self::OPTION, Settings::OPTION ] );
+
+		return get_site_option( self::OPTION, 1 );
+	}
+
+	/**
+	 * Store the database version (see self::stored_version()).
+	 *
+	 * @param int $version The version.
+	 *
+	 * @return void
+	 */
+	private static function store_version( $version ) {
+		if ( is_multisite() ) {
+			update_site_option( self::OPTION, $version );
+		} else {
+			update_option( self::OPTION, $version, true );
+		}
+	}
+
+	/**
+	 * The options table that holds the upgrade lock: the main site's, which every site of the network
+	 * shares in that role.
+	 *
+	 * @return string The table name.
+	 */
+	private static function lock_table() {
+		global $wpdb;
+
+		return is_multisite() ? $wpdb->get_blog_prefix( get_main_site_id() ) . 'options' : $wpdb->options;
+	}
+
+	/**
+	 * Run the steps after a stored version.
+	 *
+	 * @param int $version The stored version.
+	 *
+	 * @return void
+	 */
+	private static function run_steps( $version ) {
 		$steps = self::steps();
 		for ( $step = $version + 1; $step <= self::DB_VERSION; $step++ ) {
 			if ( isset( $steps[ $step ] ) ) {
 				self::for_each_site( $steps[ $step ] );
 			}
 			// Store every step, so an interrupted upgrade continues where it stopped.
-			update_site_option( self::OPTION, $step );
+			self::store_version( $step );
 		}
 	}
 
@@ -156,6 +234,7 @@ class Upgrade {
 	 */
 	public static function uninstall() {
 		delete_site_option( self::OPTION );
+		delete_option( self::OPTION );
 
 		self::for_each_site(
 			static function () {

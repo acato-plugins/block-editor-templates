@@ -140,7 +140,9 @@ class Capabilities {
 	/**
 	 * Grant the template capabilities a user meets the minimum roles for.
 	 *
-	 * Only does work when one of the template capabilities is asked for.
+	 * Only does work when one of the template capabilities is asked for. A visitor who is not logged
+	 * in never gets one, and an administrator (manage_options) always does, without reading the
+	 * settings.
 	 *
 	 * @param array<string, bool> $allcaps The user's capabilities.
 	 * @param string[]            $caps    The primitive capabilities being checked.
@@ -155,7 +157,16 @@ class Capabilities {
 				continue;
 			}
 
+			if ( ! $user->exists() ) {
+				$allcaps[ $cap ] = false;
+				continue;
+			}
+
 			$allcaps[ $cap ] = true;
+			if ( ! empty( $allcaps['manage_options'] ) ) {
+				continue;
+			}
+
 			foreach ( self::CAPABILITIES[ $cap ] as $setting ) {
 				if ( ! self::meets_any( $allcaps, (array) $user->roles, Settings::roles( $setting ) ) ) {
 					$allcaps[ $cap ] = false;
@@ -200,8 +211,12 @@ class Capabilities {
 			return true;
 		}
 
+		// A role the site does not have, or one without any publishing capability left (edited after
+		// it was chosen, or defined differently on this site than on the site the network default was
+		// chosen on), cannot be ranked: only its own members and administrators meet it. Treating an
+		// empty list as met would let every user through, logged-out visitors included.
 		$required = self::role_capabilities( $role );
-		if ( null === $required ) {
+		if ( ! $required ) {
 			return false;
 		}
 
@@ -234,21 +249,6 @@ class Capabilities {
 	}
 
 	/**
-	 * Whether the template post types use this plugin's capability type, and so the role settings.
-	 *
-	 * Not when the 'acato/block_editor_templates/post_type/capability_type' filter chose another one.
-	 *
-	 * @param string $post_type The template post type.
-	 *
-	 * @return bool
-	 */
-	public static function applies_to( $post_type ) {
-		$object = get_post_type_object( $post_type );
-
-		return $object && 'edit_abet_templates' === $object->cap->edit_posts;
-	}
-
-	/**
 	 * The roles that can be picked as a minimum: those that can work in the editor (edit_posts). First
 	 * the WordPress roles, from the highest down, then the custom roles by name.
 	 *
@@ -257,7 +257,15 @@ class Capabilities {
 	 * @return array<int, array{value: string, label: string, group: string}> The group is 'WordPress' or 'custom'.
 	 */
 	public static function role_choices( $network = false ) {
-		$roles = $network && is_multisite() ? self::network_roles() : wp_roles()->roles;
+		static $cache = [];
+
+		$network = $network && is_multisite();
+		$key     = $network ? 'network' : (string) get_current_blog_id();
+		if ( isset( $cache[ $key ] ) ) {
+			return $cache[ $key ];
+		}
+
+		$roles = $network ? self::network_roles() : wp_roles()->roles;
 
 		$wordpress = [];
 		$custom    = [];
@@ -287,7 +295,9 @@ class Capabilities {
 			}
 		);
 
-		return array_merge( array_values( $wordpress ), $custom );
+		$cache[ $key ] = array_merge( array_values( $wordpress ), $custom );
+
+		return $cache[ $key ];
 	}
 
 	/**
@@ -317,6 +327,14 @@ class Capabilities {
 	/**
 	 * The roles of every site in the network, the first definition of each role winning.
 	 *
+	 * Reads only each site's user_roles option with one small query per site. get_blog_option() would
+	 * switch to every site and load all of its autoloaded options, which on a large network costs
+	 * far more memory and time than the settings page can afford. role_choices() keeps the answer
+	 * for the rest of the request.
+	 *
+	 * Which site a role was picked from does not decide anything: each site checks the chosen role
+	 * against its own definition when a capability is asked for (see self::meets()).
+	 *
 	 * @return array<string, array{name: string, capabilities: array<string, bool>}>
 	 */
 	private static function network_roles() {
@@ -330,7 +348,10 @@ class Capabilities {
 				'network_id' => get_current_network_id(),
 			]
 		) as $site_id ) {
-			$site_roles = get_blog_option( (int) $site_id, $wpdb->get_blog_prefix( (int) $site_id ) . 'user_roles', [] );
+			$prefix = $wpdb->get_blog_prefix( (int) $site_id );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- One option of another site; the table name comes from WordPress itself.
+			$value      = $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$prefix}options WHERE option_name = %s", $prefix . 'user_roles' ) );
+			$site_roles = maybe_unserialize( (string) $value );
 			if ( is_array( $site_roles ) ) {
 				$roles += $site_roles;
 			}

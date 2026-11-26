@@ -1,7 +1,7 @@
 === Block Editor Templates ===
 Contributors: acato, rockfire, paulacato, rmpel, eyalacato
 Tags: block editor, gutenberg, block templates
-Requires at least: 5.0
+Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
 Stable tag: 1.2.0
@@ -90,6 +90,15 @@ Chore: A database version per network (per site on a single site), so data store
 Chore: Builds with Node 26.
 Chore: Requires PHP 7.4, the minimum WordPress itself requires. PHP 7.2 and 7.3 no longer receive security fixes.
 Fix: A Taxonomy Archive Template whose taxonomy cannot be linked to no longer gets a broken "View" link in the list.
+Security: Templates are visible to logged-in users only. The template REST endpoints refuse visitors who are not logged in, and template content no longer shows in the post types REST endpoint for them. Archive and 404 pages still show their template to everyone.
+Security: Template access fails closed. A minimum role that a site does not have, or that has no WordPress publishing capability left on that site, now lets only its own members and administrators through, and visitors who are not logged in never get template access.
+Fix: Only published Post Type Templates are applied to new posts, as documented. A draft, pending or private template no longer takes effect, and its content no longer shows in the post types REST endpoint.
+Fix: Each post type, taxonomy and special page can have one template. The server refuses a second one, and the editor no longer offers it.
+Fix: Special Templates moved to the trash are created again as drafts, like the other templates, and they get the same states in the list.
+Fix: The settings page shows what was saved: a role that cannot be chosen is dropped on save and no longer stays visible.
+Performance: The capability check and the settings it reads are worked out once per request. On a multisite network the settings pages read only each site's role definitions instead of loading every site's options.
+Performance: The editor builds only the template of the post type it opens. The network upgrade runs once, under a lock, and only for someone who is logged in, as does the template check. Template list previews no longer make rows jump, and their View links cost one query per taxonomy instead of one per row.
+Chore: Requires WordPress 6.6, which the editor panels need.
 
 = 1.2.0 =
 Release Date: November 10th, 2026
@@ -158,3 +167,8 @@ Fix: Changes in the plugin for posting to WordPress.org include using get_posts 
 Release Date: May 26th, 2025
 
 First public version.
+
+== Upgrade Notice ==
+
+= 1.3.0 =
+Template access now follows Block Templates > Settings; the default minimum role is Editor. Requires WordPress 6.6 and PHP 7.4.

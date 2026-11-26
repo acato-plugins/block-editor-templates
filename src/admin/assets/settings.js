@@ -83,6 +83,9 @@ const reducer = (state, action) => {
 			return {
 				...state,
 				busy: false,
+				// What the server stored, which may differ from what was sent (a role
+				// that cannot be picked is dropped), so the page shows the truth.
+				values: action.values,
 				saved: { values: action.values, useNetwork: action.useNetwork },
 				notice: {
 					status: 'success',
@@ -386,9 +389,12 @@ const SettingsPage = ({
 				signal,
 			});
 			const stored = response?.[option] ?? data;
+			const storedValues = Object.fromEntries(
+				fields.map(({ key }) => [key, stored[key] ?? values[key]])
+			);
 			dispatch({
 				type: 'SAVE_SUCCESS',
-				values,
+				values: storedValues,
 				useNetwork: !!stored.use_network,
 			});
 		} catch (error) {
@@ -405,7 +411,7 @@ const SettingsPage = ({
 					),
 			});
 		}
-	}, [busy, values, useNetwork, isMultisite, option, restPath]);
+	}, [busy, values, useNetwork, isMultisite, option, restPath, fields]);
 
 	return (
 		<div className="abet-settings">
