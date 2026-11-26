@@ -79,6 +79,7 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 3. A template made with "Add New" chooses what it is for before it is used.
 4. A new post starts with the blocks and text of the Posts template.
 5. Block Templates > Settings: the minimum roles to create, edit, publish and delete templates, with WordPress and custom roles to choose from.
+6. On a classic theme, the 404 page shows the content of its Special Template, laid out by the theme.
 
 == Changelog ==
 
@@ -107,6 +108,8 @@ Fix: The settings page shows what was saved: a role that cannot be chosen is dro
 Performance: The capability check and the settings it reads are worked out once per request. On a multisite network the settings pages read only each site's role definitions instead of loading every site's options.
 Performance: The editor builds only the template of the post type it opens. The network upgrade runs once, under a lock, and only for someone who is logged in, as does the template check. Template list previews no longer make rows jump, and their View links cost one query per taxonomy instead of one per row.
 Chore: Requires WordPress 6.6, which the editor panels need.
+Fix: Archive and 404 templates keep their form fields, such as the input of a Search block. Their output is no longer filtered a second time; the content is filtered when it is saved, as for posts.
+Fix: Archive and 404 templates sit in the theme's content area (.entry-content), so classic themes such as Twenty Twenty-One apply their width and spacing.
 
 = 1.2.0 =
 Release Date: November 10th, 2026
