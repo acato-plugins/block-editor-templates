@@ -17,12 +17,16 @@ on:
 concurrency:
   group: wordpress-org-svn
   cancel-in-progress: false
+# The job only reads the repository; the SVN credentials are the only secrets it needs.
+permissions:
+  contents: read
 jobs:
   trunk:
     name: Push to main
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      # Pinned to a commit, like the deploy action below (see deploy.yml).
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 
       # Whoever pushed sends the readme and assets with their own SVN account when
       # SVN_<LOGIN>_USERNAME and SVN_<LOGIN>_PASSWORD are set, and with the
@@ -44,7 +48,7 @@ jobs:
         run: .github/scripts/svn-account.sh choose
 
       - name: WordPress.org plugin asset/readme update
-        uses: 10up/action-wordpress-plugin-asset-update@stable
+        uses: 10up/action-wordpress-plugin-asset-update@2480306f6f693672726d08b5917ea114cb2825f7 # 2.2.0 (stable)
         env:
           SVN_PASSWORD: ${{ steps.svn.outputs.variant == 'personal' && secrets[format('SVN_{0}_PASSWORD', steps.who.outputs.key)] || secrets.SVN_PASSWORD }}
           SVN_USERNAME: ${{ steps.svn.outputs.variant == 'personal' && secrets[format('SVN_{0}_USERNAME', steps.who.outputs.key)] || secrets.SVN_USERNAME }}
