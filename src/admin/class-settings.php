@@ -693,7 +693,7 @@ class Settings {
 	 * Render the checkbox rows, one per section.
 	 *
 	 * @param array<string, bool|string[]> $values  The values to show.
-	 * @param bool                       $network True on the network settings page.
+	 * @param bool                         $network True on the network settings page.
 	 *
 	 * @return void
 	 */
@@ -706,10 +706,10 @@ class Settings {
 	/**
 	 * Render the checkboxes of one section as a row.
 	 *
-	 * @param string                     $section The section key, see self::sections().
-	 * @param string                     $title   The section title.
+	 * @param string                       $section The section key, see self::sections().
+	 * @param string                       $title   The section title.
 	 * @param array<string, bool|string[]> $values  The values to show.
-	 * @param bool                       $network True on the network settings page.
+	 * @param bool                         $network True on the network settings page.
 	 *
 	 * @return void
 	 */
