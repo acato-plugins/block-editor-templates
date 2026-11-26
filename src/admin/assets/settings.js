@@ -137,7 +137,7 @@ const RoleGroup = memo(({ title, options, chosen, onToggle }) => (
 ));
 
 /**
- * Choose one or more minimum roles: the chosen ones as a sentence beside a button that opens a list
+ * Choose one or more roles: the chosen ones as a sentence beside a button that opens a list
  * of checkboxes, with a search field and the WordPress and custom roles in groups of their own. A
  * disclosure rather than a <select multiple>, which is hard to use with a mouse and worse by keyboard.
  *

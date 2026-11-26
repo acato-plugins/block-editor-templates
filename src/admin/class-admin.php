@@ -489,6 +489,15 @@ class Admin {
 			return $prepared_post;
 		}
 
+		$target_capability = is_scalar( $meta[ $settings['meta_field'] ] ) ? Capabilities::target_capability( (string) $prepared_post->post_type, sanitize_key( (string) $meta[ $settings['meta_field'] ] ) ) : '';
+		if ( '' !== $target_capability && ! current_user_can( $target_capability ) ) {
+			return new \WP_Error(
+				'abet_template_target_forbidden',
+				__( 'Sorry, you are not allowed to make a template for this.', 'block-editor-templates' ),
+				[ 'status' => rest_authorization_required_code() ]
+			);
+		}
+
 		if ( self::is_target_taken( (string) $prepared_post->post_type, (string) $settings['meta_field'], $meta[ $settings['meta_field'] ], (int) ( $prepared_post->ID ?? 0 ) ) ) {
 			return new \WP_Error(
 				'abet_template_target_taken',
@@ -918,6 +927,12 @@ class Admin {
 		$choices    = [];
 
 		foreach ( self::template_for_choices( $post_type ) as $value => $label ) {
+			// Leave out what the user may not make a template for (see Capabilities::target_capability()).
+			$target_capability = Capabilities::target_capability( $post_type, (string) $value );
+			if ( '' !== $target_capability && ! current_user_can( $target_capability ) ) {
+				continue;
+			}
+
 			$choices[] = [
 				'value' => (string) $value,
 				'label' => $label,
@@ -1619,7 +1634,7 @@ class Admin {
 			 * Allow overriding the base capability type for finer access control.
 			 *
 			 * Since 1.3.0 the default is the plugin's own [ 'abet_template', 'abet_templates' ], whose
-			 * capabilities follow the minimum roles on Block Templates > Settings. Return anything
+			 * capabilities follow the roles chosen on Block Templates > Settings. Return anything
 			 * else and those settings no longer apply to the post type.
 			 *
 			 * @param string|array $capability_type The capability type as defined by WordPress, [ 'abet_template', 'abet_templates' ] by default.

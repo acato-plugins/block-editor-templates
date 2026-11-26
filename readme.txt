@@ -78,7 +78,7 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 2. Editing the template for Posts: the "Post Type Template" panel switches prefilling new posts on or off, and "Template for" shows which post type it belongs to.
 3. A template made with "Add New" chooses what it is for before it is used.
 4. A new post starts with the blocks and text of the Posts template.
-5. Block Templates > Settings: the minimum roles to create, edit, publish and delete templates, with WordPress and custom roles to choose from.
+5. Block Templates > Settings: the roles that may create, edit, publish and delete templates, with WordPress and custom roles to choose from.
 6. On a classic theme, the 404 page shows the content of its Special Template, laid out by the theme.
 
 == Changelog ==
@@ -86,7 +86,7 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 = 1.3.0 =
 Release Date: unreleased
 
-Feature: Block Templates > Settings sets the minimum roles to create, edit, publish and delete templates. Each can hold several roles, custom roles included, grouped as WordPress and custom roles, with a search field. A user qualifies with one of the chosen roles, or a role with at least the same WordPress publishing rights; administrators always do. The default is Editor. On a multisite network a super admin sets the default for every site, and a site can use its own.
+Feature: Block Templates > Settings sets the roles that may create, edit, publish and delete templates. Each can hold several roles, any role of the site, custom roles included, grouped as WordPress and custom roles, with a search field. A user qualifies with one of the chosen roles; administrators always do. The default is Editor. On a multisite network a super admin sets the default for every site, and a site can use its own.
 Feature: "Add New" for templates, for the roles that may create them. A new template gets a "Template for" choice in the editor (a post type, taxonomy, special page or the General Template), fixed once saved.
 Feature: The network settings page looks and works like the site's settings page, and a site that follows the network settings links to it for a super admin.
 Change: The template post types have their own capabilities (abet_template / abet_templates) instead of those of posts. The 'acato/block_editor_templates/post_type/capability_type' filter still overrides them; the role settings then no longer apply. Editors can now open the Block Templates menu by default; pick Administrator on the settings page to keep it as before.
@@ -100,7 +100,8 @@ Chore: Builds with Node 26.
 Chore: Requires PHP 7.4, the minimum WordPress itself requires. PHP 7.2 and 7.3 no longer receive security fixes.
 Fix: A Taxonomy Archive Template whose taxonomy cannot be linked to no longer gets a broken "View" link in the list.
 Security: Templates are visible to logged-in users only. The template REST endpoints refuse visitors who are not logged in, and template content no longer shows in the post types REST endpoint for them. Archive and 404 pages still show their template to everyone.
-Security: Template access fails closed. A minimum role that a site does not have, or that has no WordPress publishing capability left on that site, now lets only its own members and administrators through, and visitors who are not logged in never get template access.
+Feature: A template for a post type or taxonomy is only edited, published or deleted by users who may also edit that post type (such as edit_products for products) or manage that taxonomy's terms, on top of the role settings. Filter: acato/block_editor_templates/target_capability.
+Security: Template access fails closed: visitors who are not logged in never get template access, and a chosen role a site does not have lets nobody extra through.
 Fix: Only published Post Type Templates are applied to new posts, as documented. A draft, pending or private template no longer takes effect, and its content no longer shows in the post types REST endpoint.
 Fix: Each post type, taxonomy and special page can have one template. The server refuses a second one, and the editor no longer offers it.
 Fix: Special Templates moved to the trash are created again as drafts, like the other templates, and they get the same states in the list.
@@ -182,4 +183,4 @@ First public version.
 == Upgrade Notice ==
 
 = 1.3.0 =
-Template access now follows Block Templates > Settings; the default minimum role is Editor. Requires WordPress 6.6 and PHP 7.4.
+Template access now follows Block Templates > Settings; the default role is Editor. Requires WordPress 6.6 and PHP 7.4.

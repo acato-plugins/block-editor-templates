@@ -9,25 +9,23 @@
 namespace Acato\Block_Editor_Templates\Admin;
 
 /**
- * Grants the template capabilities by the minimum roles set on Block Templates > Settings.
+ * Grants the template capabilities by the roles chosen on Block Templates > Settings.
  *
  * The template post types use their own capability type (abet_template / abet_templates), so these
  * capabilities never touch those of posts or pages. They are not stored on any role: they are granted
- * when asked for (user_has_cap), from the minimum role of each setting.
+ * when asked for (user_has_cap), from the roles chosen for each setting.
  *
- * Each setting holds one or more minimum roles; meeting one of them is enough. Any role of the site
- * that can work in the editor (edit_posts) can be one, custom roles too. A user meets a minimum role
- * when they have that role, or at least the same WordPress publishing
- * capabilities (see self::PUBLISHING_CAPABILITIES). Capabilities that plugins add are left out of the
- * comparison: they say nothing about rank, and roles edited over the years often carry a few stray
- * ones. Administrators (manage_options) always qualify.
- * A minimum role the site does not have lets only administrators through, so a network default naming
- * a role that only exists on other sites never opens a site up.
+ * Each setting holds one or more roles; having one of them is enough. Any role of the site can be
+ * chosen, custom roles too: the site admin decides. Administrators (manage_options) always qualify.
+ * A chosen role the site does not have lets nobody extra through.
  *
  * - Edit:    the Block Templates menu, and editing templates, also published ones and other people's.
  * - Publish: publishing templates. Also needs the edit role.
  * - Create:  Add New. Also needs the edit role.
  * - Delete:  moving templates to the trash and deleting them. Also needs the edit role.
+ *
+ * On top of that, a template for a post type or taxonomy also needs the capability to work with that
+ * post type or taxonomy (see self::require_target_capability()).
  *
  * A super admin passes every check, as everywhere in WordPress.
  *
@@ -41,44 +39,10 @@ class Capabilities {
 	 *
 	 * @var string[]
 	 */
-	const WORDPRESS_ROLES = [ 'administrator', 'editor', 'author', 'contributor' ];
+	const WORDPRESS_ROLES = [ 'administrator', 'editor', 'author', 'contributor', 'subscriber' ];
 
 	/**
-	 * The WordPress capabilities that rank roles: those of posts, pages, uploads, comments and
-	 * categories, and manage_options.
-	 *
-	 * @var string[]
-	 */
-	const PUBLISHING_CAPABILITIES = [
-		'manage_options',
-		'moderate_comments',
-		'manage_categories',
-		'unfiltered_html',
-		'upload_files',
-		'edit_posts',
-		'edit_others_posts',
-		'edit_published_posts',
-		'edit_private_posts',
-		'read_private_posts',
-		'publish_posts',
-		'delete_posts',
-		'delete_others_posts',
-		'delete_published_posts',
-		'delete_private_posts',
-		'edit_pages',
-		'edit_others_pages',
-		'edit_published_pages',
-		'edit_private_pages',
-		'read_private_pages',
-		'publish_pages',
-		'delete_pages',
-		'delete_others_pages',
-		'delete_published_pages',
-		'delete_private_pages',
-	];
-
-	/**
-	 * The minimum role before anyone changes the settings.
+	 * The role chosen before anyone changes the settings, besides administrators.
 	 *
 	 * @var string
 	 */
@@ -135,10 +99,82 @@ class Capabilities {
 	 */
 	private function __construct() {
 		add_filter( 'user_has_cap', [ self::class, 'grant' ], 10, 4 );
+		add_filter( 'map_meta_cap', [ self::class, 'require_target_capability' ], 10, 4 );
 	}
 
 	/**
-	 * Grant the template capabilities a user meets the minimum roles for.
+	 * Also require the capability of what a template is for to edit, publish or delete it.
+	 *
+	 * The template for products is then only managed by users who can edit products (edit_products,
+	 * or whatever the post type maps edit_posts to), the template for an archive of a taxonomy only by
+	 * users who can manage its terms. This comes on top of the role settings. General and special
+	 * templates, and templates whose target is no longer registered (so they can still be trashed),
+	 * need nothing more.
+	 *
+	 * @param string[] $caps    The primitive capabilities the check needs.
+	 * @param string   $cap     The capability being checked.
+	 * @param int      $user_id The user ID.
+	 * @param mixed[]  $args    For the post capabilities: the post ID.
+	 *
+	 * @return string[] The capabilities, with the target's capability added.
+	 */
+	public static function require_target_capability( $caps, $cap, $user_id, $args ) {
+		if ( ! in_array( $cap, [ 'edit_post', 'delete_post', 'publish_post' ], true ) || empty( $args[0] ) ) {
+			return $caps;
+		}
+
+		$post_type = (string) get_post_type( (int) $args[0] );
+		if ( ! isset( Admin::post_types()[ $post_type ] ) ) {
+			return $caps;
+		}
+
+		$target_capability = self::target_capability( $post_type, (string) get_post_meta( (int) $args[0], (string) Admin::post_types()[ $post_type ]['meta_field'], true ) );
+		if ( '' !== $target_capability && ! in_array( $target_capability, $caps, true ) ) {
+			$caps[] = $target_capability;
+		}
+
+		return $caps;
+	}
+
+	/**
+	 * The capability a user needs for what a template is for.
+	 *
+	 * @param string $post_type The template post type.
+	 * @param string $target    What the template is for: a post type, a taxonomy, a special page or
+	 *                          'general_template'.
+	 *
+	 * @return string The capability, or '' when there is none to add.
+	 */
+	public static function target_capability( $post_type, $target ) {
+		$settings   = Admin::post_types()[ $post_type ] ?? null;
+		$capability = '';
+
+		if ( $settings && '' !== $target ) {
+			if ( 'post_type' === $settings['for'] ) {
+				$object     = get_post_type_object( $target );
+				$capability = $object ? (string) $object->cap->edit_posts : '';
+			} elseif ( 'taxonomy' === $settings['for'] ) {
+				$object     = get_taxonomy( $target );
+				$capability = $object ? (string) $object->cap->manage_terms : '';
+			}
+		}
+
+		/**
+		 * Filters the capability a user needs, besides the template capabilities, to edit, publish or
+		 * delete a template for a target.
+		 *
+		 * @param string $capability The capability: the post type's edit_posts or the taxonomy's
+		 *                           manage_terms, '' for none.
+		 * @param string $post_type  The template post type.
+		 * @param string $target     What the template is for.
+		 *
+		 * @since 1.3.0
+		 */
+		return (string) apply_filters( 'acato/block_editor_templates/target_capability', $capability, $post_type, $target );
+	}
+
+	/**
+	 * Grant the template capabilities a user has one of the chosen roles for.
 	 *
 	 * Only does work when one of the template capabilities is asked for. A visitor who is not logged
 	 * in never gets one, and an administrator (manage_options) always does, without reading the
@@ -168,7 +204,7 @@ class Capabilities {
 			}
 
 			foreach ( self::CAPABILITIES[ $cap ] as $setting ) {
-				if ( ! self::meets_any( $allcaps, (array) $user->roles, Settings::roles( $setting ) ) ) {
+				if ( ! self::has_any( (array) $user->roles, Settings::roles( $setting ) ) ) {
 					$allcaps[ $cap ] = false;
 					break;
 				}
@@ -179,78 +215,20 @@ class Capabilities {
 	}
 
 	/**
-	 * Whether a user meets at least one of the minimum roles of a setting.
+	 * Whether a user has at least one of the roles chosen for a setting.
 	 *
-	 * @param array<string, bool> $allcaps The user's capabilities.
-	 * @param string[]            $roles   The user's roles.
-	 * @param string[]            $minimum The minimum roles.
-	 *
-	 * @return bool
-	 */
-	private static function meets_any( $allcaps, $roles, $minimum ) {
-		foreach ( $minimum as $role ) {
-			if ( self::meets( $allcaps, $roles, $role ) ) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
-	 * Whether a user meets a minimum role.
-	 *
-	 * @param array<string, bool> $allcaps The user's capabilities.
-	 * @param string[]            $roles   The user's roles.
-	 * @param string              $role    The minimum role.
+	 * @param string[] $roles  The user's roles.
+	 * @param string[] $chosen The chosen roles.
 	 *
 	 * @return bool
 	 */
-	private static function meets( $allcaps, $roles, $role ) {
-		if ( ! empty( $allcaps['manage_options'] ) || in_array( $role, $roles, true ) ) {
-			return true;
-		}
-
-		// A role the site does not have, or one without any publishing capability left (edited after
-		// it was chosen, or defined differently on this site than on the site the network default was
-		// chosen on), cannot be ranked: only its own members and administrators meet it. Treating an
-		// empty list as met would let every user through, logged-out visitors included.
-		$required = self::role_capabilities( $role );
-		if ( ! $required ) {
-			return false;
-		}
-
-		foreach ( $required as $capability ) {
-			if ( empty( $allcaps[ $capability ] ) ) {
-				return false;
-			}
-		}
-
-		return true;
+	private static function has_any( $roles, $chosen ) {
+		return (bool) array_intersect( $roles, $chosen );
 	}
 
 	/**
-	 * The WordPress publishing capabilities a role of the current site has.
-	 *
-	 * @param string $role The role.
-	 *
-	 * @return string[]|null The capabilities, or null when the site has no such role.
-	 */
-	private static function role_capabilities( $role ) {
-		static $cache = [];
-
-		$key = get_current_blog_id() . ':' . $role;
-		if ( ! array_key_exists( $key, $cache ) ) {
-			$object        = get_role( $role );
-			$cache[ $key ] = $object ? array_values( array_intersect( self::PUBLISHING_CAPABILITIES, array_keys( array_filter( $object->capabilities ) ) ) ) : null;
-		}
-
-		return $cache[ $key ];
-	}
-
-	/**
-	 * The roles that can be picked as a minimum: those that can work in the editor (edit_posts). First
-	 * the WordPress roles, from the highest down, then the custom roles by name.
+	 * The roles that can be chosen: every role of the site. First the WordPress roles, from the highest
+	 * down, then the custom roles by name.
 	 *
 	 * @param bool $network True for the network default: the roles of every site in the network.
 	 *
@@ -270,10 +248,6 @@ class Capabilities {
 		$wordpress = [];
 		$custom    = [];
 		foreach ( $roles as $slug => $role ) {
-			if ( empty( $role['capabilities']['edit_posts'] ) ) {
-				continue;
-			}
-
 			$choice = [
 				'value' => (string) $slug,
 				'label' => translate_user_role( (string) $role['name'] ),
@@ -313,7 +287,7 @@ class Capabilities {
 	}
 
 	/**
-	 * Whether a role can be picked as a minimum.
+	 * Whether a role can be chosen.
 	 *
 	 * @param string $role    The role.
 	 * @param bool   $network True for the network default.
@@ -332,8 +306,8 @@ class Capabilities {
 	 * far more memory and time than the settings page can afford. role_choices() keeps the answer
 	 * for the rest of the request.
 	 *
-	 * Which site a role was picked from does not decide anything: each site checks the chosen role
-	 * against its own definition when a capability is asked for (see self::meets()).
+	 * Which site a role was picked from does not decide anything: on each site, only users with that
+	 * role on that site qualify.
 	 *
 	 * @return array<string, array{name: string, capabilities: array<string, bool>}>
 	 */

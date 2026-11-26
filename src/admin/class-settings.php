@@ -130,32 +130,32 @@ class Settings {
 	/**
 	 * The settings with their labels, descriptions, sections and types, in display order.
 	 *
-	 * A 'toggle' is on or off. A 'role' holds the slugs of one or more minimum roles, see Capabilities.
+	 * A 'toggle' is on or off. A 'role' holds the slugs of one or more chosen roles, see Capabilities.
 	 *
 	 * @return array<string, array{label: string, description: string, section: string, type: string}>
 	 */
 	public static function fields() {
 		$fields = [
 			'create_role'  => [
-				'label'       => __( 'Minimum roles to create templates', 'block-editor-templates' ),
-				'description' => __( 'Who may add a template with “Add New”. Also needs the roles to edit templates. For each of these settings, users with one of the chosen roles qualify, and so do users whose role has at least the same WordPress publishing rights as one of them. Administrators always do.', 'block-editor-templates' ),
+				'label'       => __( 'Roles that may create templates', 'block-editor-templates' ),
+				'description' => __( 'Who may add a template with “Add New”. Also needs the roles to edit templates. For each of these settings, users with one of the chosen roles qualify. Administrators always do.', 'block-editor-templates' ),
 				'section'     => 'access',
 				'type'        => 'role',
 			],
 			'edit_role'    => [
-				'label'       => __( 'Minimum roles to edit templates', 'block-editor-templates' ),
-				'description' => __( 'Who sees the Block Templates menu and may edit templates. Changes to a published template are used straight away.', 'block-editor-templates' ),
+				'label'       => __( 'Roles that may edit templates', 'block-editor-templates' ),
+				'description' => __( 'Who sees the Block Templates menu and may edit templates. Changes to a published template are used straight away. A template for a post type or taxonomy also needs the right to edit that post type, or manage that taxonomy’s terms.', 'block-editor-templates' ),
 				'section'     => 'access',
 				'type'        => 'role',
 			],
 			'publish_role' => [
-				'label'       => __( 'Minimum roles to publish templates', 'block-editor-templates' ),
+				'label'       => __( 'Roles that may publish templates', 'block-editor-templates' ),
 				'description' => __( 'Who may publish a template, which puts it to use. Also needs the roles to edit templates.', 'block-editor-templates' ),
 				'section'     => 'access',
 				'type'        => 'role',
 			],
 			'delete_role'  => [
-				'label'       => __( 'Minimum roles to delete templates', 'block-editor-templates' ),
+				'label'       => __( 'Roles that may delete templates', 'block-editor-templates' ),
 				'description' => __( 'Who may move templates to the trash and delete them. Also needs the roles to edit templates. A deleted template the plugin made itself is made again, as a draft.', 'block-editor-templates' ),
 				'section'     => 'access',
 				'type'        => 'role',
@@ -191,7 +191,7 @@ class Settings {
 
 	/**
 	 * The values used before anyone saves the settings: every column, and the walkthrough, on, and
-	 * Editor as the minimum role for templates.
+	 * Editor as the role for templates.
 	 *
 	 * @return array<string, bool|string[]>
 	 */
@@ -207,7 +207,7 @@ class Settings {
 	/**
 	 * Normalize stored or submitted values, falling back to the defaults: a boolean per toggle, and a
 	 * list of role slugs per role setting (a single slug, stored by an earlier version, becomes a list
-	 * of one). Submitted roles must be roles that can be picked (see Capabilities::role_choices());
+	 * of one). Submitted roles must be roles that can be chosen (see Capabilities::role_choices());
 	 * stored ones are checked when they are used. A role setting is never empty.
 	 *
 	 * @param mixed $values    The stored option, or the submitted form values.
@@ -299,7 +299,7 @@ class Settings {
 	}
 
 	/**
-	 * The minimum roles a role setting holds for the current site.
+	 * The roles a role setting holds for the current site.
 	 *
 	 * @param string $key The setting key: 'create_role', 'edit_role', 'publish_role' or 'delete_role'.
 	 *
