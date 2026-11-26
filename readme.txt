@@ -72,6 +72,14 @@ Please tell us, we'd like to fix it. Small wording mistakes are easy to miss, an
 
 You can report security bugs through the Patchstack Vulnerability Disclosure Program. The Patchstack team helps validate, triage and handle any security vulnerabilities. [Report a security vulnerability.]( https://patchstack.com/database/vdp/398f3310-d285-4489-ae3b-07b8ab344119 )
 
+== Screenshots ==
+
+1. The Post Type Templates list, with a preview of each template, whether it prefills new posts, and who created and last modified it.
+2. Editing the template for Posts: the "Post Type Template" panel switches prefilling new posts on or off, and "Template for" shows which post type it belongs to.
+3. A template made with "Add New" chooses what it is for before it is used.
+4. A new post starts with the blocks and text of the Posts template.
+5. Block Templates > Settings: the minimum roles to create, edit, publish and delete templates, with WordPress and custom roles to choose from.
+
 == Changelog ==
 
 = 1.3.0 =
