@@ -4,7 +4,7 @@ Tags: block editor, gutenberg, block templates
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl.html
 
@@ -84,7 +84,7 @@ You can report security bugs through the Patchstack Vulnerability Disclosure Pro
 == Changelog ==
 
 = 1.3.0 =
-Release Date: unreleased
+Release Date: November 26th, 2026
 
 Feature: Block Templates > Settings sets the roles that may create, edit, publish and delete templates. Each can hold several roles, any role of the site, custom roles included, grouped as WordPress and custom roles, with a search field. A user qualifies with one of the chosen roles; administrators always do. The default is Editor. On a multisite network a super admin sets the default for every site, and a site can use its own.
 Feature: "Add New" for templates, for the roles that may create them. A new template gets a "Template for" choice in the editor (a post type, taxonomy, special page or the General Template), fixed once saved.
